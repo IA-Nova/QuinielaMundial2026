@@ -467,8 +467,6 @@
       </div>
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
     </section>
-
-    <p class="footer-note">Los datos se leen desde Google Sheets usando GViz. Para actualizar resultados, edita resultado_real en Partidos y presiona Actualizar datos.</p>
   </main>
 
   <script>
@@ -788,8 +786,7 @@
 
       const stats = ranking.find(item => item.nombre === nombre);
       const predMap = buildPredictionMap();
-      const rows = partidos.map((partido, index) => {
-        const numero = index + 1;
+      const rows = partidos.map(partido => {
         const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
         const prediccion = prediction?.prediccion || "Sin predicción";
         const resultado = partido.resultado_real || "Pendiente";
@@ -825,9 +822,9 @@
               </tr>
             </thead>
             <tbody>
-              ${rows.map(row => `
+              ${rows.map((row, index) => `
                 <tr class="${row.status}">
-                  <td>${escapeHTML(row.numero)}</td>
+                  <td>${index + 1}</td>
                   <td>
                     <div class="match-title">${escapeHTML(row.partido.local)} vs ${escapeHTML(row.partido.visitante)}</div>
                     <div class="match-meta">Grupo ${escapeHTML(row.partido.grupo)} · ${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
