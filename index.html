@@ -468,12 +468,24 @@
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
     </section>
 
-    <p class="footer-note">Los datos se leen desde Google Sheets. Para actualizar resultados, edita resultado_real en Partidos y presiona Actualizar datos.</p>
+    <p class="footer-note">Los datos se leen desde Google Sheets usando GViz. Para actualizar resultados, edita resultado_real en Partidos y presiona Actualizar datos.</p>
   </main>
 
   <script>
-    const URL_PARTIDOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZIYrW-qw-h5pbFUIYXf7a8RHxb-y5CK5CJ6soim7baVJXCGJ8wkf4J0zg4LIZLURQ6A4b_N7iNbPE/pub?gid=337818473&single=true&output=csv";
-    const URL_PREDICCIONES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZIYrW-qw-h5pbFUIYXf7a8RHxb-y5CK5CJ6soim7baVJXCGJ8wkf4J0zg4LIZLURQ6A4b_N7iNbPE/pub?gid=1700471181&single=true&output=csv";
+    /*
+      IMPORTANTE:
+      Para evitar datos viejos del enlace "Publicado en la web", esta versión usa
+      el endpoint GViz del Google Sheet real.
+
+      1) En Google Sheets ve a Compartir.
+      2) Pon: Cualquier persona con el enlace > Lector.
+      3) Copia el ID real desde la URL normal del archivo:
+         https://docs.google.com/spreadsheets/d/ESTE_ES_EL_ID/edit
+      4) Pega ese ID abajo en SPREADSHEET_ID.
+    */
+    const SPREADSHEET_ID = "PEGA_AQUI_EL_ID_REAL_DEL_GOOGLE_SHEET";
+    const GID_PARTIDOS = "337818473";
+    const GID_PREDICCIONES = "1700471181";
 
     let partidos = [];
     let predicciones = [];
@@ -500,8 +512,8 @@
         clearError();
 
         const [partidosCsv, prediccionesCsv] = await Promise.all([
-          fetchCsv(URL_PARTIDOS),
-          fetchCsv(URL_PREDICCIONES)
+          fetchCsv(GID_PARTIDOS),
+          fetchCsv(GID_PREDICCIONES)
         ]);
 
         partidos = csvToObjects(partidosCsv)
@@ -529,20 +541,24 @@
       }
     }
 
-    function withCacheBuster(url) {
-      const separator = url.includes("?") ? "&" : "?";
-      const cacheBuster = `_=${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      return `${url}${separator}${cacheBuster}`;
+    function buildGvizCsvUrl(gid) {
+      if (!SPREADSHEET_ID || SPREADSHEET_ID === "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI") {
+        throw new Error("Falta pegar el ID real del Google Sheet en la constante SPREADSHEET_ID dentro del index.html.");
+      }
+
+      const cacheBuster = `${Date.now()}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+      const query = encodeURIComponent("select *");
+
+      return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&headers=1&tq=${query}&_=${cacheBuster}`;
     }
 
-    async function fetchCsv(url) {
-      const freshUrl = withCacheBuster(url);
+    async function fetchCsv(gid) {
+      const freshUrl = buildGvizCsvUrl(gid);
 
       /*
-        Importante:
-        No usamos headers tipo Cache-Control aquí porque Google Sheets puede bloquear
-        la solicitud por CORS/preflight y devolver "Failed to fetch".
-        El anti-caché se hace agregando un parámetro único a la URL.
+        No agregamos headers personalizados porque pueden provocar bloqueo CORS.
+        El parámetro _ cambia en cada carga para evitar caché del navegador.
+        GViz evita depender de la capa "Publicado en la web", que puede devolver datos viejos.
       */
       const response = await fetch(freshUrl);
 
