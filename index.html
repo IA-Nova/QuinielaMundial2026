@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranking Quiniela Mundial 2026</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #697386;
+      --border: #dde5f0;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --gray: #6b7280;
+      --gray-soft: #f3f4f6;
+      --yellow: #f59e0b;
+      --yellow-soft: #fef3c7;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #22c55e);
+      color: white;
+      padding: 28px 18px 34px;
+    }
+
+    .header-inner,
+    main {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 4vw, 2.8rem);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 760px;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1rem;
+    }
+
+    main {
+      padding: 22px 14px 44px;
+    }
+
+    .toolbar {
+      margin-top: -34px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
+
+    .search-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    input[type="search"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="search"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    button {
+      border: 0;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      min-height: 44px;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .status {
+      margin: 14px 2px 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.5rem;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-top: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .hint {
+      color: var(--muted);
+      margin: 6px 0 0;
+      font-size: 0.92rem;
+    }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 40px minmax(120px, 190px) 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbfdff;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+
+    .rank-row:hover,
+    .rank-row.active {
+      border-color: var(--primary);
+      background: #f8fbff;
+      transform: translateY(-1px);
+    }
+
+    .rank-pos {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .participant-name {
+      font-weight: 800;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bar-track {
+      height: 18px;
+      background: #edf2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      min-width: 4px;
+      background: linear-gradient(90deg, #2563eb, #22c55e);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    .rank-points {
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .mini-stats {
+      grid-column: 2 / -1;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+
+    .pill.green { background: var(--green-soft); color: var(--green); }
+    .pill.red { background: var(--red-soft); color: var(--red); }
+    .pill.gray { background: var(--gray-soft); color: var(--gray); }
+    .pill.blue { background: var(--primary-soft); color: var(--primary-dark); }
+    .pill.yellow { background: var(--yellow-soft); color: #92400e; }
+
+    .detail-empty {
+      color: var(--muted);
+      background: var(--gray-soft);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .participant-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .participant-header h3 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+    }
+
+    .big-score {
+      text-align: right;
+      font-weight: 900;
+      font-size: 1.6rem;
+      color: var(--primary-dark);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: white;
+    }
+
+    th,
+    td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tr.ok td { background: var(--green-soft); }
+    tr.fail td { background: var(--red-soft); }
+    tr.pending td { background: #f8fafc; color: #475569; }
+
+    .match-title {
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .match-meta {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 3px;
+    }
+
+    .error-box {
+      background: var(--red-soft);
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 14px;
+      white-space: pre-wrap;
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 0.84rem;
+      margin-top: 18px;
+      text-align: center;
+    }
+
+    @media (max-width: 760px) {
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-summary {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      section {
+        padding: 14px;
+      }
+
+      .section-head,
+      .participant-header {
+        display: block;
+      }
+
+      .big-score {
+        text-align: left;
+        margin-top: 8px;
+      }
+
+      .rank-row {
+        grid-template-columns: 34px 1fr auto;
+        gap: 9px;
+      }
+
+      .bar-track {
+        grid-column: 2 / -1;
+      }
+
+      .mini-stats {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 480px) {
+      header {
+        padding-top: 24px;
+      }
+
+      .grid-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .rank-points {
+        font-size: 0.92rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Ranking Quiniela Mundial 2026</h1>
+      <p class="subtitle">Clasificación general, puntos, aciertos, errores y detalle individual de cada participante.</p>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <label for="searchInput">Buscar participante</label>
+        <input id="searchInput" type="search" placeholder="Ej. Belsain, Blanca..." />
+      </div>
+      <button id="reloadBtn" type="button">Actualizar datos</button>
+    </div>
+
+    <p id="status" class="status">Cargando datos...</p>
+    <div id="errorBox" class="error-box" hidden></div>
+
+    <div class="grid-summary" id="summaryCards">
+      <div class="metric"><strong>-</strong><span>Participantes</span></div>
+      <div class="metric"><strong>-</strong><span>Partidos</span></div>
+      <div class="metric"><strong>-</strong><span>Partidos con resultado</span></div>
+      <div class="metric"><strong>-</strong><span>Partidos pendientes</span></div>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Ranking general</h2>
+          <p class="hint">Da click en cualquier participante para ver su quiniela completa.</p>
+        </div>
+      </div>
+      <div id="rankingList" class="ranking-list"></div>
+    </section>
+
+    <section id="detailSection">
+      <div class="section-head">
+        <div>
+          <h2>Vista individual</h2>
+          <p class="hint">Aquí se muestran los partidos, predicciones, resultado real y puntos por partido.</p>
+        </div>
+      </div>
+      <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
+    </section>
+
+    <p class="footer-note">Los datos se leen desde Google Sheets. Para actualizar resultados, edita la columna resultado_real en la hoja Partidos.</p>
+  </main>
+
+  <script>
+    const URL_PARTIDOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZIYrW-qw-h5pbFUIYXf7a8RHxb-y5CK5CJ6soim7baVJXCGJ8wkf4J0zg4LIZLURQ6A4b_N7iNbPE/pub?gid=337818473&single=true&output=csv";
+    const URL_PREDICCIONES = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZIYrW-qw-h5pbFUIYXf7a8RHxb-y5CK5CJ6soim7baVJXCGJ8wkf4J0zg4LIZLURQ6A4b_N7iNbPE/pub?gid=1700471181&single=true&output=csv";
+
+    let partidos = [];
+    let predicciones = [];
+    let ranking = [];
+    let selectedParticipant = null;
+
+    const statusEl = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const rankingList = document.getElementById("rankingList");
+    const detailEl = document.getElementById("participantDetail");
+    const summaryCards = document.getElementById("summaryCards");
+    const searchInput = document.getElementById("searchInput");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      reloadBtn.addEventListener("click", loadData);
+      searchInput.addEventListener("input", renderRanking);
+      loadData();
+    });
+
+    async function loadData() {
+      try {
+        setLoading(true);
+        clearError();
+
+        const cacheBust = `cb=${Date.now()}`;
+        const [partidosCsv, prediccionesCsv] = await Promise.all([
+          fetchCsv(`${URL_PARTIDOS}&${cacheBust}`),
+          fetchCsv(`${URL_PREDICCIONES}&${cacheBust}`)
+        ]);
+
+        partidos = csvToObjects(partidosCsv)
+          .filter(row => row.id_partido)
+          .map(normalizePartido)
+          .sort(sortByDateAndHour);
+
+        predicciones = csvToObjects(prediccionesCsv)
+          .filter(row => row.id_participante && row.id_partido)
+          .map(normalizePrediccion);
+
+        validateData();
+        ranking = calculateRanking();
+        selectedParticipant = getParticipantFromHash() || ranking[0]?.nombre || null;
+
+        renderSummary();
+        renderRanking();
+        renderParticipantDetail(selectedParticipant);
+
+        statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
+      } catch (error) {
+        showError(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function fetchCsv(url) {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`No se pudo cargar el CSV: ${response.status} ${response.statusText}`);
+      }
+      return await response.text();
+    }
+
+    function csvToObjects(csvText) {
+      const rows = parseCSV(csvText);
+      if (!rows.length) return [];
+
+      const headers = rows[0].map(header => normalizeHeader(header));
+
+      return rows.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = cleanValue(row[index] ?? "");
+        });
+        return obj;
+      });
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let currentRow = [];
+      let currentValue = "";
+      let insideQuotes = false;
+
+      text = text.replace(/^\uFEFF/, "");
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+          if (insideQuotes && nextChar === '"') {
+            currentValue += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === "," && !insideQuotes) {
+          currentRow.push(currentValue);
+          currentValue = "";
+        } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+          if (char === "\r" && nextChar === "\n") i++;
+          currentRow.push(currentValue);
+          rows.push(currentRow);
+          currentRow = [];
+          currentValue = "";
+        } else {
+          currentValue += char;
+        }
+      }
+
+      if (currentValue !== "" || currentRow.length) {
+        currentRow.push(currentValue);
+        rows.push(currentRow);
+      }
+
+      return rows.filter(row => row.some(cell => cleanValue(cell) !== ""));
+    }
+
+    function normalizeHeader(value) {
+      return cleanValue(value)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "_");
+    }
+
+    function cleanValue(value) {
+      return String(value ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizeComparable(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizePartido(row) {
+      return {
+        id_partido: cleanValue(row.id_partido),
+        grupo: cleanValue(row.grupo),
+        fecha: cleanValue(row.fecha),
+        hora: cleanValue(row.hora),
+        local: cleanValue(row.local),
+        visitante: cleanValue(row.visitante),
+        resultado_real: cleanValue(row.resultado_real)
+      };
+    }
+
+    function normalizePrediccion(row) {
+      return {
+        id_participante: cleanValue(row.id_participante),
+        id_partido: cleanValue(row.id_partido),
+        prediccion: cleanValue(row.prediccion)
+      };
+    }
+
+    function validateData() {
+      const requiredPartidos = ["id_partido", "grupo", "fecha", "hora", "local", "visitante", "resultado_real"];
+      const requiredPredicciones = ["id_participante", "id_partido", "prediccion"];
+
+      const samplePartido = partidos[0] || {};
+      const samplePrediccion = predicciones[0] || {};
+
+      const missingPartidos = requiredPartidos.filter(key => !(key in samplePartido));
+      const missingPredicciones = requiredPredicciones.filter(key => !(key in samplePrediccion));
+
+      if (missingPartidos.length || missingPredicciones.length) {
+        throw new Error(
+          `Faltan columnas en el CSV.\n` +
+          `Partidos: ${missingPartidos.join(", ") || "OK"}\n` +
+          `Predicciones: ${missingPredicciones.join(", ") || "OK"}`
+        );
+      }
+    }
+
+    function calculateRanking() {
+      const participants = [...new Set(predicciones.map(p => p.id_participante))].sort((a, b) => a.localeCompare(b, "es"));
+      const predMap = buildPredictionMap();
+
+      return participants.map(nombre => {
+        let puntos = 0;
+        let aciertos = 0;
+        let errores = 0;
+        let pendientes = 0;
+
+        partidos.forEach(partido => {
+          const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+          const result = partido.resultado_real;
+
+          if (!result) {
+            pendientes++;
+            return;
+          }
+
+          if (prediction && normalizeComparable(prediction.prediccion) === normalizeComparable(result)) {
+            puntos++;
+            aciertos++;
+          } else {
+            errores++;
+          }
+        });
+
+        return {
+          nombre,
+          puntos,
+          aciertos,
+          errores,
+          pendientes,
+          total: partidos.length
+        };
+      }).sort((a, b) => {
+        if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+        if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
+        if (a.errores !== b.errores) return a.errores - b.errores;
+        return a.nombre.localeCompare(b.nombre, "es");
+      });
+    }
+
+    function buildPredictionMap() {
+      const map = new Map();
+      predicciones.forEach(pred => {
+        map.set(`${pred.id_participante}::${pred.id_partido}`, pred);
+      });
+      return map;
+    }
+
+    function renderSummary() {
+      const totalPartidos = partidos.length;
+      const partidosConResultado = partidos.filter(p => p.resultado_real).length;
+      const partidosPendientes = totalPartidos - partidosConResultado;
+
+      summaryCards.innerHTML = `
+        <div class="metric"><strong>${ranking.length}</strong><span>Participantes</span></div>
+        <div class="metric"><strong>${totalPartidos}</strong><span>Partidos</span></div>
+        <div class="metric"><strong>${partidosConResultado}</strong><span>Partidos con resultado</span></div>
+        <div class="metric"><strong>${partidosPendientes}</strong><span>Partidos pendientes</span></div>
+      `;
+    }
+
+    function renderRanking() {
+      const query = normalizeComparable(searchInput.value);
+      const filteredRanking = ranking.filter(item => normalizeComparable(item.nombre).includes(query));
+      const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+
+      if (!filteredRanking.length) {
+        rankingList.innerHTML = `<div class="detail-empty">No se encontró ningún participante.</div>`;
+        return;
+      }
+
+      rankingList.innerHTML = filteredRanking.map((item, index) => {
+        const originalPosition = ranking.findIndex(r => r.nombre === item.nombre) + 1;
+        const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+        const isActive = item.nombre === selectedParticipant ? "active" : "";
+
+        return `
+          <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}')">
+            <div class="rank-pos">${originalPosition}</div>
+            <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+            <div class="bar-track" aria-label="${item.puntos} puntos">
+              <div class="bar-fill" style="width: ${width}%"></div>
+            </div>
+            <div class="rank-points">${item.puntos} pts</div>
+            <div class="mini-stats">
+              <span class="pill green">${item.aciertos} aciertos</span>
+              <span class="pill red">${item.errores} errores</span>
+              <span class="pill gray">${item.pendientes} pendientes</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function selectParticipant(nombre) {
+      selectedParticipant = nombre;
+      window.location.hash = `participante=${encodeURIComponent(nombre)}`;
+      renderRanking();
+      renderParticipantDetail(nombre);
+      document.getElementById("detailSection").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    window.selectParticipant = selectParticipant;
+
+    function renderParticipantDetail(nombre) {
+      if (!nombre) {
+        detailEl.className = "detail-empty";
+        detailEl.innerHTML = "Selecciona un participante del ranking.";
+        return;
+      }
+
+      const stats = ranking.find(item => item.nombre === nombre);
+      const predMap = buildPredictionMap();
+      const rows = partidos.map(partido => {
+        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+        const prediccion = prediction?.prediccion || "Sin predicción";
+        const resultado = partido.resultado_real || "Pendiente";
+        const status = getMatchStatus(prediccion, partido.resultado_real);
+        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
+
+        return { partido, prediccion, resultado, status, puntos };
+      });
+
+      detailEl.className = "";
+      detailEl.innerHTML = `
+        <div class="participant-header">
+          <div>
+            <h3>${escapeHTML(nombre)}</h3>
+            <div>
+              <span class="pill green">${stats?.aciertos ?? 0} aciertos</span>
+              <span class="pill red">${stats?.errores ?? 0} errores</span>
+              <span class="pill gray">${stats?.pendientes ?? 0} pendientes</span>
+            </div>
+          </div>
+          <div class="big-score">${stats?.puntos ?? 0} pts</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Partido</th>
+                <th>Predicción</th>
+                <th>Resultado real</th>
+                <th>Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr class="${row.status}">
+                  <td>
+                    <div class="match-title">${escapeHTML(row.partido.local)} vs ${escapeHTML(row.partido.visitante)}</div>
+                    <div class="match-meta">Grupo ${escapeHTML(row.partido.grupo)} · ${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
+                  </td>
+                  <td>${escapeHTML(row.prediccion)}</td>
+                  <td>${escapeHTML(row.resultado)}</td>
+                  <td><strong>${row.puntos}</strong></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function getMatchStatus(prediccion, resultadoReal) {
+      if (!resultadoReal) return "pending";
+      return normalizeComparable(prediccion) === normalizeComparable(resultadoReal) ? "ok" : "fail";
+    }
+
+    function sortByDateAndHour(a, b) {
+      const dateA = parseDateTime(a.fecha, a.hora);
+      const dateB = parseDateTime(b.fecha, b.hora);
+      return dateA - dateB || Number(a.id_partido) - Number(b.id_partido);
+    }
+
+    function parseDateTime(fecha, hora) {
+      const normalizedDate = normalizeDate(fecha);
+      return new Date(`${normalizedDate}T${hora || "00:00"}:00`);
+    }
+
+    function normalizeDate(fecha) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+
+      const parts = fecha.split(/[\/\-]/).map(part => part.padStart(2, "0"));
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        if (year.length === 4) return `${year}-${month}-${day}`;
+      }
+
+      return fecha;
+    }
+
+    function formatDate(fecha) {
+      const normalized = normalizeDate(fecha);
+      const date = new Date(`${normalized}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return fecha;
+
+      return date.toLocaleDateString("es-MX", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    function getParticipantFromHash() {
+      const hash = decodeURIComponent(window.location.hash || "");
+      const match = hash.match(/participante=([^&]+)/);
+      return match ? match[1] : null;
+    }
+
+    function setLoading(isLoading) {
+      reloadBtn.disabled = isLoading;
+      reloadBtn.textContent = isLoading ? "Cargando..." : "Actualizar datos";
+      if (isLoading) statusEl.textContent = "Cargando datos...";
+    }
+
+    function showError(error) {
+      console.error(error);
+      statusEl.textContent = "No se pudieron cargar los datos.";
+      errorBox.hidden = false;
+      errorBox.textContent = `${error.message}\n\nRevisa que las hojas estén publicadas como CSV y que los nombres de columnas sean correctos.`;
+    }
+
+    function clearError() {
+      errorBox.hidden = true;
+      errorBox.textContent = "";
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeForAttribute(value) {
+      return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
