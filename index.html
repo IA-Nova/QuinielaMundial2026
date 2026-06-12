@@ -483,7 +483,7 @@
          https://docs.google.com/spreadsheets/d/ESTE_ES_EL_ID/edit
       4) Pega ese ID abajo en SPREADSHEET_ID.
     */
-    const SPREADSHEET_ID = "PEGA_AQUI_EL_ID_REAL_DEL_GOOGLE_SHEET";
+    const SPREADSHEET_ID = "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI";
     const GID_PARTIDOS = "337818473";
     const GID_PREDICCIONES = "1700471181";
 
@@ -512,8 +512,8 @@
         clearError();
 
         const [partidosCsv, prediccionesCsv] = await Promise.all([
-          fetchCsv(GID_PARTIDOS),
-          fetchCsv(GID_PREDICCIONES)
+          fetchCsv(GID_PARTIDOS, "Partidos"),
+          fetchCsv(GID_PREDICCIONES, "Predicciones")
         ]);
 
         partidos = csvToObjects(partidosCsv)
@@ -542,31 +542,37 @@
     }
 
     function buildGvizCsvUrl(gid) {
-      if (!SPREADSHEET_ID || SPREADSHEET_ID === "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI") {
+      if (!SPREADSHEET_ID || SPREADSHEET_ID === "PEGA_AQUI_EL_ID_REAL_DEL_GOOGLE_SHEET") {
         throw new Error("Falta pegar el ID real del Google Sheet en la constante SPREADSHEET_ID dentro del index.html.");
       }
 
-      const cacheBuster = `${Date.now()}-${crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
-      const query = encodeURIComponent("select *");
-
-      return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&headers=1&tq=${query}&_=${cacheBuster}`;
-    }
-
-    async function fetchCsv(gid) {
-      const freshUrl = buildGvizCsvUrl(gid);
+      const cacheBuster = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
       /*
-        No agregamos headers personalizados porque pueden provocar bloqueo CORS.
-        El parámetro _ cambia en cada carga para evitar caché del navegador.
-        GViz evita depender de la capa "Publicado en la web", que puede devolver datos viejos.
+        Usamos el formato simple de GViz, igual al que se puede abrir directo en el navegador:
+        /gviz/tq?tqx=out:csv&gid=...
+
+        No agregamos tq=select*, headers=1 ni headers personalizados en fetch,
+        porque en algunos casos Google responde 404 o bloquea la petición.
       */
+      return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&nocache=${cacheBuster}`;
+    }
+
+    async function fetchCsv(gid, sheetName) {
+      const freshUrl = buildGvizCsvUrl(gid);
       const response = await fetch(freshUrl);
 
       if (!response.ok) {
-        throw new Error(`No se pudo cargar el CSV: ${response.status} ${response.statusText}`);
+        throw new Error(`No se pudo cargar la hoja ${sheetName}: ${response.status} ${response.statusText}`);
       }
 
-      return await response.text();
+      const text = await response.text();
+
+      if (text.trim().startsWith("<")) {
+        throw new Error(`Google devolvió HTML en lugar de CSV para la hoja ${sheetName}. Revisa permisos o el gid de la hoja.`);
+      }
+
+      return text;
     }
 
     function csvToObjects(csvText) {
