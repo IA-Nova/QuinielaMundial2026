@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Ranking Quiniela Mundial 2026</title>
   <style>
     :root {
@@ -465,7 +468,7 @@
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
     </section>
 
-    <p class="footer-note">Los datos se leen desde Google Sheets. Para actualizar resultados, edita la columna resultado_real en la hoja Partidos.</p>
+    <p class="footer-note">Los datos se leen desde Google Sheets. Para actualizar resultados, edita resultado_real en Partidos y presiona Actualizar datos.</p>
   </main>
 
   <script>
@@ -496,10 +499,9 @@
         setLoading(true);
         clearError();
 
-        const cacheBust = `cb=${Date.now()}`;
         const [partidosCsv, prediccionesCsv] = await Promise.all([
-          fetchCsv(`${URL_PARTIDOS}&${cacheBust}`),
-          fetchCsv(`${URL_PREDICCIONES}&${cacheBust}`)
+          fetchCsv(URL_PARTIDOS),
+          fetchCsv(URL_PREDICCIONES)
         ]);
 
         partidos = csvToObjects(partidosCsv)
@@ -527,11 +529,29 @@
       }
     }
 
+    function withCacheBuster(url) {
+      const separator = url.includes("?") ? "&" : "?";
+      const cacheBuster = `_=${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      return `${url}${separator}${cacheBuster}`;
+    }
+
     async function fetchCsv(url) {
-      const response = await fetch(url);
+      const freshUrl = withCacheBuster(url);
+
+      const response = await fetch(freshUrl, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Pragma": "no-cache",
+          "Expires": "0"
+        }
+      });
+
       if (!response.ok) {
         throw new Error(`No se pudo cargar el CSV: ${response.status} ${response.statusText}`);
       }
+
       return await response.text();
     }
 
