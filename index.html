@@ -309,7 +309,7 @@
 
     .table-wrap { overflow-x: auto; }
 
-    table { width: 100%; border-collapse: collapse; min-width: 760px; background: white; }
+    table { width: 100%; border-collapse: collapse; min-width: 820px; background: white; }
     th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
     th { background: #f8fafc; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
     tr:last-child td { border-bottom: 0; }
@@ -319,6 +319,74 @@
 
     .match-title { font-weight: 900; color: #111827; }
     .match-meta { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
+
+    .prediction-match {
+      display: grid;
+      grid-template-columns: minmax(185px, 1fr) auto minmax(185px, 1fr);
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .prediction-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .prediction-side.local { justify-content: flex-end; text-align: right; }
+    .prediction-side.visitante { justify-content: flex-start; text-align: left; }
+
+    .prediction-center {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      justify-content: center;
+      color: #64748b;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .prediction-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #94a3b8;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: transparent;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .prediction-box.checked {
+      border-color: var(--primary-dark);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+    }
+
+    .prediction-box.tie-box {
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      font-size: 13px;
+    }
+
+    .prediction-box.checked::before { content: "×"; }
+
+    .prediction-help {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
 
 
     .team-name {
@@ -381,6 +449,9 @@
       .mini-stats { grid-column: 1 / -1; }
       .group-card-head { display: block; }
       .group-teams { text-align: left; margin-top: 6px; }
+      .prediction-match { grid-template-columns: 1fr; gap: 8px; align-items: stretch; }
+      .prediction-side.local, .prediction-side.visitante { justify-content: flex-start; text-align: left; }
+      .prediction-center { justify-content: flex-start; }
     }
 
     @media (max-width: 480px) {
@@ -879,8 +950,7 @@
             <table>
               <thead>
                 <tr>
-                  <th>Partido</th>
-                  <th>Predicción</th>
+                  <th>Partido y predicción</th>
                   <th>Resultado real</th>
                   <th>Puntos</th>
                 </tr>
@@ -889,10 +959,9 @@
                 ${rows.map(row => `
                   <tr class="${row.status}">
                     <td>
-                      <div class="match-title">${teamWithFlag(row.partido.local)} <span>vs</span> ${teamWithFlag(row.partido.visitante)}</div>
+                      ${renderPredictionMatch(row.partido, row.prediccion)}
                       <div class="match-meta">${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
                     </td>
-                    <td>${teamWithFlag(row.prediccion)}</td>
                     <td>${teamWithFlag(row.resultado)}</td>
                     <td><strong>${row.puntos}</strong></td>
                   </tr>
@@ -925,6 +994,41 @@
       const ranking = rankingsByGroup.get(group) || [];
       const index = ranking.findIndex(item => item.nombre === nombre);
       return index >= 0 ? index + 1 : "-";
+    }
+
+    function renderPredictionMatch(partido, prediccion) {
+      const predictionType = getPredictionType(partido, prediccion);
+      const localChecked = predictionType === "local" ? "checked" : "";
+      const tieChecked = predictionType === "empate" ? "checked" : "";
+      const visitanteChecked = predictionType === "visitante" ? "checked" : "";
+      const predictionLabel = prediccion === "Sin predicción" ? "Sin predicción" : `Predicción: ${prediccion}`;
+
+      return `
+        <div class="prediction-match" title="${escapeForAttribute(predictionLabel)}">
+          <div class="prediction-side local">
+            ${teamWithFlag(partido.local)}
+            <span class="prediction-box ${localChecked}" aria-label="Predicción local"></span>
+          </div>
+          <div class="prediction-center">
+            <span class="prediction-box tie-box ${tieChecked}" aria-label="Predicción empate"></span>
+            <span>VS</span>
+          </div>
+          <div class="prediction-side visitante">
+            <span class="prediction-box ${visitanteChecked}" aria-label="Predicción visitante"></span>
+            ${teamWithFlag(partido.visitante)}
+          </div>
+        </div>
+        <div class="prediction-help">${escapeHTML(predictionLabel)}</div>
+      `;
+    }
+
+    function getPredictionType(partido, prediccion) {
+      const prediction = normalizeComparable(prediccion);
+      if (!prediction || prediction === normalizeComparable("Sin predicción")) return "none";
+      if (prediction === normalizeComparable("Empate")) return "empate";
+      if (prediction === normalizeComparable(partido.local)) return "local";
+      if (prediction === normalizeComparable(partido.visitante)) return "visitante";
+      return "none";
     }
 
     function getTeamsForGroup(group) {
