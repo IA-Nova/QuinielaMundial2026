@@ -320,6 +320,40 @@
     .match-title { font-weight: 900; color: #111827; }
     .match-meta { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
 
+
+    .team-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .team-flag {
+      width: 22px;
+      height: 16px;
+      object-fit: cover;
+      border-radius: 3px;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+      flex: 0 0 auto;
+      background: white;
+    }
+
+    .match-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .group-team-list {
+      display: flex;
+      gap: 6px 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
     .error-box {
       background: var(--red-soft);
       color: #991b1b;
@@ -401,6 +435,57 @@
     const SPREADSHEET_ID = "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI";
     const GID_PARTIDOS = "337818473";
     const GID_PREDICCIONES = "1700471181";
+    const FLAGS = {
+      "México": "mx",
+      "Sudáfrica": "za",
+      "Corea del Sur": "kr",
+      "Chequia": "cz",
+      "Canadá": "ca",
+      "Bosnia-Herzegovina": "ba",
+      "Qatar": "qa",
+      "Suiza": "ch",
+      "Brasil": "br",
+      "Marruecos": "ma",
+      "Haití": "ht",
+      "Escocia": "gb-sct",
+      "Estados Unidos": "us",
+      "Paraguay": "py",
+      "Australia": "au",
+      "Turquía": "tr",
+      "Alemania": "de",
+      "Curazao": "cw",
+      "Costa de Marfil": "ci",
+      "Ecuador": "ec",
+      "Países Bajos": "nl",
+      "Japón": "jp",
+      "Suecia": "se",
+      "Túnez": "tn",
+      "Bélgica": "be",
+      "Egipto": "eg",
+      "Irán": "ir",
+      "Nueva Zelanda": "nz",
+      "España": "es",
+      "Cabo Verde": "cv",
+      "Arabia Saudita": "sa",
+      "Uruguay": "uy",
+      "Francia": "fr",
+      "Senegal": "sn",
+      "Irak": "iq",
+      "Noruega": "no",
+      "Argentina": "ar",
+      "Argelia": "dz",
+      "Austria": "at",
+      "Jordania": "jo",
+      "Portugal": "pt",
+      "RD Congo": "cd",
+      "Uzbekistán": "uz",
+      "Colombia": "co",
+      "Inglaterra": "gb-eng",
+      "Croacia": "hr",
+      "Ghana": "gh",
+      "Panamá": "pa"
+    };
+
 
     let partidos = [];
     let predicciones = [];
@@ -684,13 +769,13 @@
         const groupRanking = rankingsByGroup.get(group) || [];
         const filteredRanking = groupRanking.filter(item => normalizeComparable(item.nombre).includes(query));
         const maxPoints = Math.max(...groupRanking.map(item => item.puntos), 1);
-        const teams = getTeamsForGroup(group).join(" · ");
+        const teams = getTeamsForGroup(group);
 
         return `
           <article class="group-card">
             <div class="group-card-head">
               <div class="group-title"><span class="group-badge">${escapeHTML(group)}</span> Grupo ${escapeHTML(group)}</div>
-              <div class="group-teams">${escapeHTML(teams)}</div>
+              <div class="group-teams group-team-list">${teams.map(teamWithFlag).join("")}</div>
             </div>
             <div class="ranking-list">
               ${filteredRanking.length ? filteredRanking.map((item) => renderRankRow(item, groupRanking, maxPoints)).join("") : `<div class="detail-empty">No se encontró ningún participante.</div>`}
@@ -804,11 +889,11 @@
                 ${rows.map(row => `
                   <tr class="${row.status}">
                     <td>
-                      <div class="match-title">${escapeHTML(row.partido.local)} vs ${escapeHTML(row.partido.visitante)}</div>
+                      <div class="match-title">${teamWithFlag(row.partido.local)} <span>vs</span> ${teamWithFlag(row.partido.visitante)}</div>
                       <div class="match-meta">${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
                     </td>
-                    <td>${escapeHTML(row.prediccion)}</td>
-                    <td>${escapeHTML(row.resultado)}</td>
+                    <td>${teamWithFlag(row.prediccion)}</td>
+                    <td>${teamWithFlag(row.resultado)}</td>
                     <td><strong>${row.puntos}</strong></td>
                   </tr>
                 `).join("")}
@@ -849,6 +934,27 @@
         if (p.visitante) teams.add(p.visitante);
       });
       return [...teams].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function teamWithFlag(teamName) {
+      const cleanName = cleanValue(teamName);
+
+      if (!cleanName) return "";
+      if (["Empate", "Pendiente", "Sin predicción"].includes(cleanName)) {
+        return `<span>${escapeHTML(cleanName)}</span>`;
+      }
+
+      const code = FLAGS[cleanName];
+      if (!code) {
+        return `<span>${escapeHTML(cleanName)}</span>`;
+      }
+
+      return `
+        <span class="team-name" title="${escapeHTML(cleanName)}">
+          <img class="team-flag" src="https://flagcdn.com/24x18/${code}.png" srcset="https://flagcdn.com/48x36/${code}.png 2x" alt="Bandera de ${escapeHTML(cleanName)}" loading="lazy" />
+          <span>${escapeHTML(cleanName)}</span>
+        </span>
+      `;
     }
 
     function getMatchStatus(prediccion, resultadoReal) {
