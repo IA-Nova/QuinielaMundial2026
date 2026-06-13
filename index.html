@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <title>Ranking Quiniela Mundial 2026</title>
+  <title>Quiniela Mundial 2026 por Grupos</title>
   <style>
     :root {
       --bg: #f4f7fb;
@@ -29,9 +29,7 @@
       --radius: 18px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -48,7 +46,7 @@
 
     .header-inner,
     main {
-      width: min(1120px, 100%);
+      width: min(1180px, 100%);
       margin: 0 auto;
     }
 
@@ -60,14 +58,12 @@
 
     .subtitle {
       margin: 0;
-      max-width: 760px;
-      color: rgba(255, 255, 255, 0.9);
+      max-width: 820px;
+      color: rgba(255, 255, 255, 0.92);
       font-size: 1rem;
     }
 
-    main {
-      padding: 22px 14px 44px;
-    }
+    main { padding: 22px 14px 44px; }
 
     .toolbar {
       margin-top: -34px;
@@ -82,17 +78,9 @@
       border: 1px solid var(--border);
     }
 
-    .search-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .search-wrap { display: flex; flex-direction: column; gap: 6px; }
 
-    label {
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--muted);
-    }
+    label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
 
     input[type="search"] {
       width: 100%;
@@ -120,16 +108,10 @@
       min-height: 44px;
     }
 
-    button:hover {
-      background: var(--primary-dark);
-      transform: translateY(-1px);
-    }
+    button:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    button:disabled { opacity: .7; cursor: not-allowed; transform: none; }
 
-    .status {
-      margin: 14px 2px 0;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
+    .status { margin: 14px 2px 0; color: var(--muted); font-size: 0.92rem; }
 
     .grid-summary {
       display: grid;
@@ -146,16 +128,8 @@
       box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
     }
 
-    .metric strong {
-      display: block;
-      font-size: 1.5rem;
-      margin-bottom: 4px;
-    }
-
-    .metric span {
-      color: var(--muted);
-      font-size: 0.86rem;
-    }
+    .metric strong { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+    .metric span { color: var(--muted); font-size: 0.86rem; }
 
     section {
       background: var(--card);
@@ -174,64 +148,91 @@
       margin-bottom: 14px;
     }
 
-    h2 {
-      margin: 0;
-      font-size: 1.35rem;
+    h2 { margin: 0; font-size: 1.35rem; }
+    h3 { margin: 0; }
+    .hint { color: var(--muted); margin: 6px 0 0; font-size: 0.92rem; }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
     }
 
-    .hint {
-      color: var(--muted);
-      margin: 6px 0 0;
-      font-size: 0.92rem;
+    .group-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fbfdff;
+      padding: 14px;
     }
 
-    .ranking-list {
+    .group-card-head {
       display: flex;
-      flex-direction: column;
+      justify-content: space-between;
       gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
     }
+
+    .group-title {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 1.08rem;
+      font-weight: 900;
+    }
+
+    .group-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      font-weight: 900;
+    }
+
+    .group-teams {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .ranking-list { display: flex; flex-direction: column; gap: 9px; }
 
     .rank-row {
       display: grid;
-      grid-template-columns: 40px minmax(120px, 190px) 1fr auto;
-      gap: 12px;
+      grid-template-columns: 34px minmax(100px, 150px) 1fr auto;
+      gap: 10px;
       align-items: center;
-      padding: 12px;
+      padding: 10px;
       border: 1px solid var(--border);
       border-radius: 14px;
-      background: #fbfdff;
+      background: white;
       cursor: pointer;
       transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
     }
 
     .rank-row:hover,
-    .rank-row.active {
-      border-color: var(--primary);
-      background: #f8fbff;
-      transform: translateY(-1px);
-    }
+    .rank-row.active { border-color: var(--primary); background: #f8fbff; transform: translateY(-1px); }
 
     .rank-pos {
-      width: 34px;
-      height: 34px;
+      width: 30px;
+      height: 30px;
       display: grid;
       place-items: center;
       border-radius: 999px;
       background: var(--primary-soft);
       color: var(--primary-dark);
-      font-weight: 800;
-      font-size: 0.9rem;
+      font-weight: 900;
+      font-size: 0.82rem;
     }
 
-    .participant-name {
-      font-weight: 800;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+    .participant-name { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .bar-track {
-      height: 18px;
+      height: 16px;
       background: #edf2f7;
       border-radius: 999px;
       overflow: hidden;
@@ -246,18 +247,15 @@
       transition: width 0.35s ease;
     }
 
-    .rank-points {
-      font-weight: 900;
-      white-space: nowrap;
-    }
+    .rank-points { font-weight: 900; white-space: nowrap; font-size: .92rem; }
 
     .mini-stats {
       grid-column: 2 / -1;
       display: flex;
-      gap: 8px;
+      gap: 7px;
       flex-wrap: wrap;
       color: var(--muted);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
     }
 
     .pill {
@@ -266,8 +264,8 @@
       gap: 5px;
       border-radius: 999px;
       padding: 5px 9px;
-      font-weight: 700;
-      font-size: 0.78rem;
+      font-weight: 800;
+      font-size: 0.76rem;
     }
 
     .pill.green { background: var(--green-soft); color: var(--green); }
@@ -291,66 +289,36 @@
       margin-bottom: 16px;
     }
 
-    .participant-header h3 {
-      margin: 0 0 6px;
-      font-size: 1.5rem;
-    }
+    .participant-header h3 { margin: 0 0 6px; font-size: 1.5rem; }
+    .big-score { text-align: right; font-weight: 900; font-size: 1.6rem; color: var(--primary-dark); }
 
-    .big-score {
-      text-align: right;
-      font-weight: 900;
-      font-size: 1.6rem;
-      color: var(--primary-dark);
-    }
+    .detail-group { margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .detail-group:first-of-type { margin-top: 0; }
 
-    .table-wrap {
-      overflow-x: auto;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 760px;
-      background: white;
-    }
-
-    th,
-    td {
-      padding: 12px 10px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-      vertical-align: top;
-      font-size: 0.92rem;
-    }
-
-    th {
+    .detail-group-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
       background: #f8fafc;
-      color: #475569;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
     }
 
-    tr:last-child td {
-      border-bottom: 0;
-    }
+    .detail-group-head strong { font-size: 1.02rem; }
 
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 760px; background: white; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
+    th { background: #f8fafc; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: 0; }
     tr.ok td { background: var(--green-soft); }
     tr.fail td { background: var(--red-soft); }
     tr.pending td { background: #f8fafc; color: #475569; }
 
-    .match-title {
-      font-weight: 800;
-      color: #111827;
-    }
-
-    .match-meta {
-      color: var(--muted);
-      font-size: 0.8rem;
-      margin-top: 3px;
-    }
+    .match-title { font-weight: 900; color: #111827; }
+    .match-meta { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
 
     .error-box {
       background: var(--red-soft);
@@ -362,62 +330,29 @@
       white-space: pre-wrap;
     }
 
-    .footer-note {
-      color: var(--muted);
-      font-size: 0.84rem;
-      margin-top: 18px;
-      text-align: center;
+    .footer-note { color: var(--muted); font-size: 0.84rem; margin-top: 18px; text-align: center; }
+
+    @media (max-width: 900px) {
+      .group-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 760px) {
-      .toolbar {
-        grid-template-columns: 1fr;
-      }
-
-      .grid-summary {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      section {
-        padding: 14px;
-      }
-
-      .section-head,
-      .participant-header {
-        display: block;
-      }
-
-      .big-score {
-        text-align: left;
-        margin-top: 8px;
-      }
-
-      .rank-row {
-        grid-template-columns: 34px 1fr auto;
-        gap: 9px;
-      }
-
-      .bar-track {
-        grid-column: 2 / -1;
-      }
-
-      .mini-stats {
-        grid-column: 1 / -1;
-      }
+      .toolbar { grid-template-columns: 1fr; }
+      .grid-summary { grid-template-columns: repeat(2, 1fr); }
+      section { padding: 14px; }
+      .section-head, .participant-header { display: block; }
+      .big-score { text-align: left; margin-top: 8px; }
+      .rank-row { grid-template-columns: 32px 1fr auto; gap: 9px; }
+      .bar-track { grid-column: 2 / -1; }
+      .mini-stats { grid-column: 1 / -1; }
+      .group-card-head { display: block; }
+      .group-teams { text-align: left; margin-top: 6px; }
     }
 
     @media (max-width: 480px) {
-      header {
-        padding-top: 24px;
-      }
-
-      .grid-summary {
-        grid-template-columns: 1fr;
-      }
-
-      .rank-points {
-        font-size: 0.92rem;
-      }
+      header { padding-top: 24px; }
+      .grid-summary { grid-template-columns: 1fr; }
+      .rank-points { font-size: 0.9rem; }
     }
   </style>
 </head>
@@ -425,7 +360,7 @@
   <header>
     <div class="header-inner">
       <h1>Ranking Quiniela Mundial 2026</h1>
-      <p class="subtitle">Clasificación general, puntos, aciertos, errores y detalle individual de cada participante.</p>
+      <p class="subtitle">Ranking separado por grupo. El ganador de cada grupo es quien consiga más puntos en los partidos de ese grupo.</p>
     </div>
   </header>
 
@@ -444,18 +379,18 @@
     <section>
       <div class="section-head">
         <div>
-          <h2>Ranking general</h2>
-          <p class="hint">Da click en cualquier participante para ver su quiniela completa.</p>
+          <h2>Rankings por grupo</h2>
+          <p class="hint">Da click en cualquier participante para ver su quiniela individual, también agrupada por grupos.</p>
         </div>
       </div>
-      <div id="rankingList" class="ranking-list"></div>
+      <div id="groupRankings" class="group-grid"></div>
     </section>
 
     <section id="detailSection">
       <div class="section-head">
         <div>
-          <h2>Vista individual</h2>
-          <p class="hint">Aquí se muestran los partidos, predicciones, resultado real y puntos por partido.</p>
+          <h2>Vista individual por grupos</h2>
+          <p class="hint">Cada bloque muestra puntos, aciertos, errores y pendientes de ese participante dentro del grupo.</p>
         </div>
       </div>
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
@@ -463,29 +398,18 @@
   </main>
 
   <script>
-    /*
-      IMPORTANTE:
-      Para evitar datos viejos del enlace "Publicado en la web", esta versión usa
-      el endpoint GViz del Google Sheet real.
-
-      1) En Google Sheets ve a Compartir.
-      2) Pon: Cualquier persona con el enlace > Lector.
-      3) Copia el ID real desde la URL normal del archivo:
-         https://docs.google.com/spreadsheets/d/ESTE_ES_EL_ID/edit
-      4) Pega ese ID abajo en SPREADSHEET_ID.
-    */
     const SPREADSHEET_ID = "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI";
     const GID_PARTIDOS = "337818473";
     const GID_PREDICCIONES = "1700471181";
 
     let partidos = [];
     let predicciones = [];
-    let ranking = [];
+    let rankingsByGroup = new Map();
     let selectedParticipant = null;
 
     const statusEl = document.getElementById("status");
     const errorBox = document.getElementById("errorBox");
-    const rankingList = document.getElementById("rankingList");
+    const groupRankingsEl = document.getElementById("groupRankings");
     const detailEl = document.getElementById("participantDetail");
     const summaryCards = document.getElementById("summaryCards");
     const searchInput = document.getElementById("searchInput");
@@ -493,7 +417,7 @@
 
     document.addEventListener("DOMContentLoaded", () => {
       reloadBtn.addEventListener("click", loadData);
-      searchInput.addEventListener("input", renderRanking);
+      searchInput.addEventListener("input", renderGroupRankings);
       loadData();
     });
 
@@ -510,17 +434,17 @@
         partidos = csvToObjects(partidosCsv)
           .filter(row => row.id_partido)
           .map(normalizePartido)
-          .sort(sortByDateAndHour);
+          .sort(sortByGroupDateAndHour);
 
         predicciones = csvToObjects(prediccionesCsv)
           .filter(row => row.id_participante && row.id_partido)
           .map(normalizePrediccion);
 
         validateData();
-        ranking = calculateRanking();
-        selectedParticipant = getParticipantFromHash() || ranking[0]?.nombre || null;
+        rankingsByGroup = calculateRankingsByGroup();
+        selectedParticipant = getParticipantFromHash() || getParticipants()[0] || null;
 
-        renderRanking();
+        renderGroupRankings();
         renderParticipantDetail(selectedParticipant);
 
         statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
@@ -532,19 +456,7 @@
     }
 
     function buildGvizCsvUrl(gid) {
-      if (!SPREADSHEET_ID || SPREADSHEET_ID === "PEGA_AQUI_EL_ID_REAL_DEL_GOOGLE_SHEET") {
-        throw new Error("Falta pegar el ID real del Google Sheet en la constante SPREADSHEET_ID dentro del index.html.");
-      }
-
       const cacheBuster = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      /*
-        Usamos el formato simple de GViz, igual al que se puede abrir directo en el navegador:
-        /gviz/tq?tqx=out:csv&gid=...
-
-        No agregamos tq=select*, headers=1 ni headers personalizados en fetch,
-        porque en algunos casos Google responde 404 o bloquea la petición.
-      */
       return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&nocache=${cacheBuster}`;
     }
 
@@ -637,10 +549,14 @@
       return cleanValue(value).toLowerCase();
     }
 
+    function normalizeGroup(value) {
+      return cleanValue(value).replace(/^grupo\s+/i, "").toUpperCase();
+    }
+
     function normalizePartido(row) {
       return {
         id_partido: cleanValue(row.id_partido),
-        grupo: cleanValue(row.grupo),
+        grupo: normalizeGroup(row.grupo),
         fecha: cleanValue(row.fecha),
         hora: cleanValue(row.hora),
         local: cleanValue(row.local),
@@ -661,62 +577,90 @@
       const requiredPartidos = ["id_partido", "grupo", "fecha", "hora", "local", "visitante", "resultado_real"];
       const requiredPredicciones = ["id_participante", "id_partido", "prediccion"];
 
-      const samplePartido = partidos[0] || {};
-      const samplePrediccion = predicciones[0] || {};
+      const sampleRawPartido = csvToObjectsCacheSample(partidos, requiredPartidos);
+      const sampleRawPrediccion = csvToObjectsCacheSample(predicciones, requiredPredicciones);
 
-      const missingPartidos = requiredPartidos.filter(key => !(key in samplePartido));
-      const missingPredicciones = requiredPredicciones.filter(key => !(key in samplePrediccion));
-
-      if (missingPartidos.length || missingPredicciones.length) {
+      if (!sampleRawPartido.ok || !sampleRawPrediccion.ok) {
         throw new Error(
-          `Faltan columnas en el CSV.\n` +
-          `Partidos: ${missingPartidos.join(", ") || "OK"}\n` +
-          `Predicciones: ${missingPredicciones.join(", ") || "OK"}`
+          `Faltan columnas o datos en el CSV.\n` +
+          `Partidos: ${sampleRawPartido.missing.join(", ") || "OK"}\n` +
+          `Predicciones: ${sampleRawPrediccion.missing.join(", ") || "OK"}`
         );
       }
     }
 
-    function calculateRanking() {
-      const participants = [...new Set(predicciones.map(p => p.id_participante))].sort((a, b) => a.localeCompare(b, "es"));
+    function csvToObjectsCacheSample(data, requiredKeys) {
+      const sample = data[0] || {};
+      const missing = requiredKeys.filter(key => !(key in sample));
+      return { ok: missing.length === 0 && data.length > 0, missing: data.length > 0 ? missing : ["sin datos"] };
+    }
+
+    function getParticipants() {
+      return [...new Set(predicciones.map(p => p.id_participante))].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function getGroups() {
+      return [...new Set(partidos.map(p => p.grupo).filter(Boolean))].sort(sortGroups);
+    }
+
+    function sortGroups(a, b) {
+      return a.localeCompare(b, "es", { numeric: true });
+    }
+
+    function calculateRankingsByGroup() {
+      const result = new Map();
+      const participants = getParticipants();
+      const groups = getGroups();
       const predMap = buildPredictionMap();
 
-      return participants.map(nombre => {
-        let puntos = 0;
-        let aciertos = 0;
-        let errores = 0;
-        let pendientes = 0;
+      groups.forEach(group => {
+        const groupMatches = partidos.filter(partido => partido.grupo === group);
 
-        partidos.forEach(partido => {
-          const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
-          const result = partido.resultado_real;
+        const ranking = participants.map(nombre => {
+          let puntos = 0;
+          let aciertos = 0;
+          let errores = 0;
+          let pendientes = 0;
 
-          if (!result) {
-            pendientes++;
-            return;
-          }
+          groupMatches.forEach(partido => {
+            const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+            const resultReal = partido.resultado_real;
 
-          if (prediction && normalizeComparable(prediction.prediccion) === normalizeComparable(result)) {
-            puntos++;
-            aciertos++;
-          } else {
-            errores++;
-          }
-        });
+            if (!resultReal) {
+              pendientes++;
+              return;
+            }
 
-        return {
-          nombre,
-          puntos,
-          aciertos,
-          errores,
-          pendientes,
-          total: partidos.length
-        };
-      }).sort((a, b) => {
-        if (b.puntos !== a.puntos) return b.puntos - a.puntos;
-        if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
-        if (a.errores !== b.errores) return a.errores - b.errores;
-        return a.nombre.localeCompare(b.nombre, "es");
+            if (prediction && normalizeComparable(prediction.prediccion) === normalizeComparable(resultReal)) {
+              puntos++;
+              aciertos++;
+            } else {
+              errores++;
+            }
+          });
+
+          return {
+            nombre,
+            grupo: group,
+            puntos,
+            aciertos,
+            errores,
+            pendientes,
+            total: groupMatches.length
+          };
+        }).sort(sortRankingRows);
+
+        result.set(group, ranking);
       });
+
+      return result;
+    }
+
+    function sortRankingRows(a, b) {
+      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+      if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
+      if (a.errores !== b.errores) return a.errores - b.errores;
+      return a.nombre.localeCompare(b.nombre, "es");
     }
 
     function buildPredictionMap() {
@@ -727,43 +671,61 @@
       return map;
     }
 
-    function renderRanking() {
+    function renderGroupRankings() {
       const query = normalizeComparable(searchInput.value);
-      const filteredRanking = ranking.filter(item => normalizeComparable(item.nombre).includes(query));
-      const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+      const groups = getGroups();
 
-      if (!filteredRanking.length) {
-        rankingList.innerHTML = `<div class="detail-empty">No se encontró ningún participante.</div>`;
+      if (!groups.length) {
+        groupRankingsEl.innerHTML = `<div class="detail-empty">No hay grupos para mostrar.</div>`;
         return;
       }
 
-      rankingList.innerHTML = filteredRanking.map((item, index) => {
-        const originalPosition = ranking.findIndex(r => r.nombre === item.nombre) + 1;
-        const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
-        const isActive = item.nombre === selectedParticipant ? "active" : "";
+      groupRankingsEl.innerHTML = groups.map(group => {
+        const groupRanking = rankingsByGroup.get(group) || [];
+        const filteredRanking = groupRanking.filter(item => normalizeComparable(item.nombre).includes(query));
+        const maxPoints = Math.max(...groupRanking.map(item => item.puntos), 1);
+        const teams = getTeamsForGroup(group).join(" · ");
 
         return `
-          <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}')">
-            <div class="rank-pos">${originalPosition}</div>
-            <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
-            <div class="bar-track" aria-label="${item.puntos} puntos">
-              <div class="bar-fill" style="width: ${width}%"></div>
+          <article class="group-card">
+            <div class="group-card-head">
+              <div class="group-title"><span class="group-badge">${escapeHTML(group)}</span> Grupo ${escapeHTML(group)}</div>
+              <div class="group-teams">${escapeHTML(teams)}</div>
             </div>
-            <div class="rank-points">${item.puntos} pts</div>
-            <div class="mini-stats">
-              <span class="pill green">${item.aciertos} aciertos</span>
-              <span class="pill red">${item.errores} errores</span>
-              <span class="pill gray">${item.pendientes} pendientes</span>
+            <div class="ranking-list">
+              ${filteredRanking.length ? filteredRanking.map((item) => renderRankRow(item, groupRanking, maxPoints)).join("") : `<div class="detail-empty">No se encontró ningún participante.</div>`}
             </div>
           </article>
         `;
       }).join("");
     }
 
+    function renderRankRow(item, groupRanking, maxPoints) {
+      const originalPosition = groupRanking.findIndex(r => r.nombre === item.nombre) + 1;
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+      const isActive = item.nombre === selectedParticipant ? "active" : "";
+
+      return `
+        <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}')">
+          <div class="rank-pos">${originalPosition}</div>
+          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          <div class="bar-track" aria-label="${item.puntos} puntos">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
     function selectParticipant(nombre) {
       selectedParticipant = nombre;
       window.location.hash = `participante=${encodeURIComponent(nombre)}`;
-      renderRanking();
+      renderGroupRankings();
       renderParticipantDetail(nombre);
       document.getElementById("detailSection").scrollIntoView({ behavior: "smooth", block: "start" });
     }
@@ -777,17 +739,9 @@
         return;
       }
 
-      const stats = ranking.find(item => item.nombre === nombre);
       const predMap = buildPredictionMap();
-      const rows = partidos.map(partido => {
-        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
-        const prediccion = prediction?.prediccion || "Sin predicción";
-        const resultado = partido.resultado_real || "Pendiente";
-        const status = getMatchStatus(prediccion, partido.resultado_real);
-        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
-
-        return { partido, prediccion, resultado, status, puntos };
-      });
+      const groups = getGroups();
+      const globalStats = calculateParticipantGlobalStats(nombre);
 
       detailEl.className = "";
       detailEl.innerHTML = `
@@ -795,47 +749,115 @@
           <div>
             <h3>${escapeHTML(nombre)}</h3>
             <div>
-              <span class="pill green">${stats?.aciertos ?? 0} aciertos</span>
-              <span class="pill red">${stats?.errores ?? 0} errores</span>
-              <span class="pill gray">${stats?.pendientes ?? 0} pendientes</span>
+              <span class="pill blue">Resumen total</span>
+              <span class="pill green">${globalStats.aciertos} aciertos</span>
+              <span class="pill red">${globalStats.errores} errores</span>
+              <span class="pill gray">${globalStats.pendientes} pendientes</span>
             </div>
           </div>
-          <div class="big-score">${stats?.puntos ?? 0} pts</div>
+          <div class="big-score">${globalStats.puntos} pts</div>
         </div>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Número</th>
-                <th>Partido</th>
-                <th>Predicción</th>
-                <th>Resultado real</th>
-                <th>Puntos</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map((row, index) => `
-                <tr class="${row.status}">
-                  <td>${index + 1}</td>
-                  <td>
-                    <div class="match-title">${escapeHTML(row.partido.local)} vs ${escapeHTML(row.partido.visitante)}</div>
-                    <div class="match-meta">Grupo ${escapeHTML(row.partido.grupo)} · ${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
-                  </td>
-                  <td>${escapeHTML(row.prediccion)}</td>
-                  <td>${escapeHTML(row.resultado)}</td>
-                  <td><strong>${row.puntos}</strong></td>
+        ${groups.map(group => renderParticipantGroup(nombre, group, predMap)).join("")}
+      `;
+    }
+
+    function renderParticipantGroup(nombre, group, predMap) {
+      const groupMatches = partidos.filter(partido => partido.grupo === group).sort(sortByDateAndHour);
+      const rows = groupMatches.map(partido => {
+        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+        const prediccion = prediction?.prediccion || "Sin predicción";
+        const resultado = partido.resultado_real || "Pendiente";
+        const status = getMatchStatus(prediccion, partido.resultado_real);
+        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
+        return { partido, prediccion, resultado, status, puntos };
+      });
+
+      const stats = calculateGroupStatsForParticipant(nombre, group);
+      const position = getPositionInGroup(nombre, group);
+
+      return `
+        <div class="detail-group">
+          <div class="detail-group-head">
+            <div>
+              <strong>Grupo ${escapeHTML(group)}</strong>
+              <span class="pill yellow">Lugar ${position}</span>
+            </div>
+            <div>
+              <span class="pill blue">${stats.puntos} pts</span>
+              <span class="pill green">${stats.aciertos} aciertos</span>
+              <span class="pill red">${stats.errores} errores</span>
+              <span class="pill gray">${stats.pendientes} pendientes</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Partido</th>
+                  <th>Predicción</th>
+                  <th>Resultado real</th>
+                  <th>Puntos</th>
                 </tr>
-              `).join("")}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${rows.map(row => `
+                  <tr class="${row.status}">
+                    <td>
+                      <div class="match-title">${escapeHTML(row.partido.local)} vs ${escapeHTML(row.partido.visitante)}</div>
+                      <div class="match-meta">${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
+                    </td>
+                    <td>${escapeHTML(row.prediccion)}</td>
+                    <td>${escapeHTML(row.resultado)}</td>
+                    <td><strong>${row.puntos}</strong></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
+    }
+
+    function calculateParticipantGlobalStats(nombre) {
+      const groups = getGroups();
+      return groups.reduce((acc, group) => {
+        const stats = calculateGroupStatsForParticipant(nombre, group);
+        acc.puntos += stats.puntos;
+        acc.aciertos += stats.aciertos;
+        acc.errores += stats.errores;
+        acc.pendientes += stats.pendientes;
+        return acc;
+      }, { puntos: 0, aciertos: 0, errores: 0, pendientes: 0 });
+    }
+
+    function calculateGroupStatsForParticipant(nombre, group) {
+      const ranking = rankingsByGroup.get(group) || [];
+      return ranking.find(item => item.nombre === nombre) || { puntos: 0, aciertos: 0, errores: 0, pendientes: 0 };
+    }
+
+    function getPositionInGroup(nombre, group) {
+      const ranking = rankingsByGroup.get(group) || [];
+      const index = ranking.findIndex(item => item.nombre === nombre);
+      return index >= 0 ? index + 1 : "-";
+    }
+
+    function getTeamsForGroup(group) {
+      const teams = new Set();
+      partidos.filter(p => p.grupo === group).forEach(p => {
+        if (p.local) teams.add(p.local);
+        if (p.visitante) teams.add(p.visitante);
+      });
+      return [...teams].sort((a, b) => a.localeCompare(b, "es"));
     }
 
     function getMatchStatus(prediccion, resultadoReal) {
       if (!resultadoReal) return "pending";
       return normalizeComparable(prediccion) === normalizeComparable(resultadoReal) ? "ok" : "fail";
+    }
+
+    function sortByGroupDateAndHour(a, b) {
+      return sortGroups(a.grupo, b.grupo) || sortByDateAndHour(a, b);
     }
 
     function sortByDateAndHour(a, b) {
@@ -851,13 +873,11 @@
 
     function normalizeDate(fecha) {
       if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
-
       const parts = fecha.split(/[\/\-]/).map(part => part.padStart(2, "0"));
       if (parts.length === 3) {
         const [day, month, year] = parts;
         if (year.length === 4) return `${year}-${month}-${day}`;
       }
-
       return fecha;
     }
 
@@ -865,7 +885,6 @@
       const normalized = normalizeDate(fecha);
       const date = new Date(`${normalized}T00:00:00`);
       if (Number.isNaN(date.getTime())) return fecha;
-
       return date.toLocaleDateString("es-MX", {
         weekday: "short",
         day: "2-digit",
@@ -890,7 +909,7 @@
       console.error(error);
       statusEl.textContent = "No se pudieron cargar los datos.";
       errorBox.hidden = false;
-      errorBox.textContent = `${error.message}\n\nRevisa que las hojas estén publicadas como CSV y que los nombres de columnas sean correctos.`;
+      errorBox.textContent = `${error.message}\n\nRevisa que las hojas estén publicadas como CSV, que el Google Sheet sea público como lector y que los nombres de columnas sean correctos.`;
     }
 
     function clearError() {
@@ -903,7 +922,7 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
+        .replace(/\"/g, "&quot;")
         .replace(/'/g, "&#039;");
     }
 
@@ -911,7 +930,7 @@
       return String(value ?? "")
         .replace(/\\/g, "\\\\")
         .replace(/'/g, "\\'")
-        .replace(/"/g, "&quot;");
+        .replace(/\"/g, "&quot;");
     }
   </script>
 </body>
