@@ -322,18 +322,32 @@
 
     .prediction-match {
       display: grid;
-      grid-template-columns: minmax(185px, 1fr) auto minmax(185px, 1fr);
+      grid-template-columns: minmax(115px, 1fr) auto minmax(115px, 1fr);
       align-items: center;
-      gap: 12px;
+      gap: 8px;
       font-weight: 900;
       color: #111827;
+      white-space: nowrap;
+      min-width: 0;
     }
 
     .prediction-side {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       min-width: 0;
+      overflow: hidden;
+    }
+
+    .prediction-side .team-name {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .prediction-side .team-name span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .prediction-side.local { justify-content: flex-end; text-align: right; }
@@ -342,11 +356,12 @@
     .prediction-center {
       display: flex;
       align-items: center;
-      gap: 7px;
       justify-content: center;
       color: #64748b;
       font-weight: 900;
       white-space: nowrap;
+      font-size: 0.84rem;
+      letter-spacing: 0.03em;
     }
 
     .prediction-box {
@@ -370,13 +385,6 @@
       background: var(--primary-soft);
       color: var(--primary-dark);
       box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
-    }
-
-    .prediction-box.tie-box {
-      width: 20px;
-      height: 20px;
-      border-radius: 999px;
-      font-size: 13px;
     }
 
     .prediction-box.checked::before { content: "×"; }
@@ -449,9 +457,10 @@
       .mini-stats { grid-column: 1 / -1; }
       .group-card-head { display: block; }
       .group-teams { text-align: left; margin-top: 6px; }
-      .prediction-match { grid-template-columns: 1fr; gap: 8px; align-items: stretch; }
-      .prediction-side.local, .prediction-side.visitante { justify-content: flex-start; text-align: left; }
-      .prediction-center { justify-content: flex-start; }
+      .prediction-match { grid-template-columns: minmax(92px, 1fr) auto minmax(92px, 1fr); gap: 5px; }
+      .prediction-box { width: 19px; height: 19px; border-radius: 5px; font-size: 14px; }
+      .prediction-side { gap: 4px; }
+      .prediction-center { font-size: 0.72rem; }
     }
 
     @media (max-width: 480px) {
@@ -998,9 +1007,8 @@
 
     function renderPredictionMatch(partido, prediccion) {
       const predictionType = getPredictionType(partido, prediccion);
-      const localChecked = predictionType === "local" ? "checked" : "";
-      const tieChecked = predictionType === "empate" ? "checked" : "";
-      const visitanteChecked = predictionType === "visitante" ? "checked" : "";
+      const localChecked = ["local", "empate"].includes(predictionType) ? "checked" : "";
+      const visitanteChecked = ["visitante", "empate"].includes(predictionType) ? "checked" : "";
       const predictionLabel = prediccion === "Sin predicción" ? "Sin predicción" : `Predicción: ${prediccion}`;
 
       return `
@@ -1010,7 +1018,6 @@
             <span class="prediction-box ${localChecked}" aria-label="Predicción local"></span>
           </div>
           <div class="prediction-center">
-            <span class="prediction-box tie-box ${tieChecked}" aria-label="Predicción empate"></span>
             <span>VS</span>
           </div>
           <div class="prediction-side visitante">
