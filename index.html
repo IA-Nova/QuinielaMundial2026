@@ -113,6 +113,60 @@
 
     .status { margin: 14px 2px 0; color: var(--muted); font-size: 0.92rem; }
 
+    .today-pending-section {
+      margin-top: 14px;
+      padding: 16px;
+    }
+
+    .today-pending-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .today-match-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+
+    .today-match-time {
+      min-width: 58px;
+      text-align: center;
+      border-radius: 12px;
+      padding: 8px 7px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .today-match-info {
+      min-width: 0;
+    }
+
+    .today-match-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .today-match-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+
     .grid-summary {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -448,6 +502,8 @@
 
     @media (max-width: 760px) {
       .toolbar { grid-template-columns: 1fr; }
+
+      .today-pending-list { grid-template-columns: 1fr; }
       .grid-summary { grid-template-columns: repeat(2, 1fr); }
       section { padding: 14px; }
       .section-head, .participant-header { display: block; }
@@ -488,6 +544,17 @@
     </div>
 
     <p id="status" class="status">Cargando datos...</p>
+
+    <section class="today-pending-section">
+      <div class="section-head">
+        <div>
+          <h2>Partidos pendientes de hoy</h2>
+          <p class="hint">Solo aparecen los partidos de hoy que todavía no tienen resultado real capturado.</p>
+        </div>
+      </div>
+      <div id="todayPendingMatches" class="today-pending-list"></div>
+    </section>
+
     <div id="errorBox" class="error-box" hidden></div>
 
     <section>
@@ -575,6 +642,7 @@
     const statusEl = document.getElementById("status");
     const errorBox = document.getElementById("errorBox");
     const groupRankingsEl = document.getElementById("groupRankings");
+    const todayPendingMatchesEl = document.getElementById("todayPendingMatches");
     const detailEl = document.getElementById("participantDetail");
     const summaryCards = document.getElementById("summaryCards");
     const searchInput = document.getElementById("searchInput");
@@ -609,10 +677,11 @@
         rankingsByGroup = calculateRankingsByGroup();
         selectedParticipant = getParticipantFromHash() || getParticipants()[0] || null;
 
+        renderTodayPendingMatches();
         renderGroupRankings();
         renderParticipantDetail(selectedParticipant);
 
-        statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
+        statusEl.textContent = '';
       } catch (error) {
         showError(error);
       } finally {
@@ -834,6 +903,41 @@
         map.set(`${pred.id_participante}::${pred.id_partido}`, pred);
       });
       return map;
+    }
+
+
+    function renderTodayPendingMatches() {
+      const today = getTodayISODate();
+      const pendingToday = partidos
+        .filter(partido => normalizeDate(partido.fecha) === today && !partido.resultado_real)
+        .sort(sortByDateAndHour);
+
+      if (!pendingToday.length) {
+        todayPendingMatchesEl.innerHTML = `<div class="detail-empty">No quedan partidos pendientes para hoy.</div>`;
+        return;
+      }
+
+      todayPendingMatchesEl.innerHTML = pendingToday.map(partido => `
+        <article class="today-match-card">
+          <div class="today-match-time">${escapeHTML(partido.hora || "--:--")}</div>
+          <div class="today-match-info">
+            <div class="today-match-title">
+              ${teamWithFlag(partido.local)}
+              <span>vs</span>
+              ${teamWithFlag(partido.visitante)}
+            </div>
+            <div class="today-match-meta">Grupo ${escapeHTML(partido.grupo)} · ${formatDate(partido.fecha)}</div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function getTodayISODate() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
     }
 
     function renderGroupRankings() {
