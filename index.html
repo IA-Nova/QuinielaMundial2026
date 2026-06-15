@@ -166,6 +166,58 @@
       font-weight: 700;
     }
 
+    .clickable-match-row { cursor: pointer; }
+    .clickable-match-row:hover td { filter: brightness(0.98); }
+
+    .match-detail-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fbfdff;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .match-detail-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .match-detail-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .secondary-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .secondary-btn:hover {
+      background: #d1d5db;
+    }
+
+    .match-summary-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .prediction-choice {
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
 
     .grid-summary {
       display: grid;
@@ -545,7 +597,7 @@
 
     <p id="status" class="status">Cargando datos...</p>
 
-    <section class="today-pending-section">
+    <section id="todayPendingSection" class="today-pending-section">
       <div class="section-head">
         <div>
           <h2>Partidos pendientes de hoy</h2>
@@ -557,7 +609,7 @@
 
     <div id="errorBox" class="error-box" hidden></div>
 
-    <section>
+    <section id="rankingsSection">
       <div class="section-head">
         <div>
           <h2>Rankings por grupo</h2>
@@ -575,6 +627,17 @@
         </div>
       </div>
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
+    </section>
+
+    <section id="matchSection" hidden>
+      <div class="match-detail-actions">
+        <div>
+          <h2>Predicciones por partido</h2>
+          <p class="hint">Aquí puedes revisar qué apostó cada participante para el partido seleccionado.</p>
+        </div>
+        <button class="secondary-btn" type="button" onclick="goBackToParticipant()">Volver</button>
+      </div>
+      <div id="matchDetail"></div>
     </section>
   </main>
 
@@ -643,6 +706,11 @@
     const errorBox = document.getElementById("errorBox");
     const groupRankingsEl = document.getElementById("groupRankings");
     const todayPendingMatchesEl = document.getElementById("todayPendingMatches");
+    const todayPendingSection = document.getElementById("todayPendingSection");
+    const rankingsSection = document.getElementById("rankingsSection");
+    const detailSection = document.getElementById("detailSection");
+    const matchSection = document.getElementById("matchSection");
+    const matchDetailEl = document.getElementById("matchDetail");
     const detailEl = document.getElementById("participantDetail");
     const summaryCards = document.getElementById("summaryCards");
     const searchInput = document.getElementById("searchInput");
@@ -651,6 +719,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       reloadBtn.addEventListener("click", loadData);
       searchInput.addEventListener("input", renderGroupRankings);
+      window.addEventListener("hashchange", renderRouteFromHash);
       loadData();
     });
 
@@ -680,8 +749,9 @@
         renderTodayPendingMatches();
         renderGroupRankings();
         renderParticipantDetail(selectedParticipant);
+        renderRouteFromHash();
 
-        statusEl.textContent = '';
+        statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
       } catch (error) {
         showError(error);
       } finally {
@@ -779,6 +849,12 @@
       return String(value ?? "").trim().replace(/\s+/g, " ");
     }
 
+    function normalizeIdPartido(value) {
+      const clean = cleanValue(value);
+      if (/^\d+\.0+$/.test(clean)) return String(parseInt(clean, 10));
+      return clean;
+    }
+
     function normalizeComparable(value) {
       return cleanValue(value).toLowerCase();
     }
@@ -789,7 +865,7 @@
 
     function normalizePartido(row) {
       return {
-        id_partido: cleanValue(row.id_partido),
+        id_partido: normalizeIdPartido(row.id_partido),
         grupo: normalizeGroup(row.grupo),
         fecha: cleanValue(row.fecha),
         hora: cleanValue(row.hora),
@@ -802,7 +878,7 @@
     function normalizePrediccion(row) {
       return {
         id_participante: cleanValue(row.id_participante),
-        id_partido: cleanValue(row.id_partido),
+        id_partido: normalizeIdPartido(row.id_partido),
         prediccion: cleanValue(row.prediccion)
       };
     }
@@ -918,7 +994,7 @@
       }
 
       todayPendingMatchesEl.innerHTML = pendingToday.map(partido => `
-        <article class="today-match-card">
+        <article class="today-match-card clickable-match-row" onclick="selectMatch('${escapeForAttribute(partido.id_partido)}')" title="Ver predicciones de este partido">
           <div class="today-match-time">${escapeHTML(partido.hora || "--:--")}</div>
           <div class="today-match-info">
             <div class="today-match-title">
@@ -1001,6 +1077,166 @@
 
     window.selectParticipant = selectParticipant;
 
+    function selectMatch(idPartido) {
+      const normalizedId = normalizeIdPartido(idPartido);
+      window.location.hash = `partido=${encodeURIComponent(normalizedId)}`;
+      renderMatchDetail(normalizedId);
+    }
+
+    window.selectMatch = selectMatch;
+
+    function goBackToParticipant() {
+      if (selectedParticipant) {
+        window.location.hash = `participante=${encodeURIComponent(selectedParticipant)}`;
+      } else {
+        window.location.hash = "";
+        renderRouteFromHash();
+      }
+    }
+
+    window.goBackToParticipant = goBackToParticipant;
+
+    function renderRouteFromHash() {
+      const idPartido = getMatchFromHash();
+
+      if (idPartido) {
+        renderMatchDetail(idPartido);
+        return;
+      }
+
+      const participantFromHash = getParticipantFromHash();
+      if (participantFromHash) {
+        selectedParticipant = participantFromHash;
+      }
+
+      showMainView();
+      renderGroupRankings();
+      renderParticipantDetail(selectedParticipant);
+    }
+
+    function showMainView() {
+      todayPendingSection.hidden = false;
+      rankingsSection.hidden = false;
+      detailSection.hidden = false;
+      matchSection.hidden = true;
+    }
+
+    function showMatchView() {
+      todayPendingSection.hidden = true;
+      rankingsSection.hidden = true;
+      detailSection.hidden = true;
+      matchSection.hidden = false;
+    }
+
+    function renderMatchDetail(idPartido) {
+      const normalizedId = normalizeIdPartido(idPartido);
+      const partido = partidos.find(item => normalizeIdPartido(item.id_partido) === normalizedId);
+
+      if (!partido) {
+        showMatchView();
+        matchDetailEl.innerHTML = `<div class="detail-empty">No se encontró el partido seleccionado.</div>`;
+        return;
+      }
+
+      const predMap = buildPredictionMap();
+      const rows = getParticipants().map(nombre => {
+        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+        const prediccion = prediction?.prediccion || "Sin predicción";
+        const status = getMatchStatus(prediccion, partido.resultado_real);
+        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
+        const tipo = getPredictionType(partido, prediccion);
+
+        return { nombre, prediccion, status, puntos, tipo };
+      }).sort(sortMatchPredictionRows);
+
+      const totals = rows.reduce((acc, row) => {
+        acc.total++;
+        if (row.tipo === "local") acc.local++;
+        else if (row.tipo === "empate") acc.empate++;
+        else if (row.tipo === "visitante") acc.visitante++;
+        else acc.sinPrediccion++;
+
+        if (row.status === "ok") acc.aciertos++;
+        else if (row.status === "fail") acc.errores++;
+        else acc.pendientes++;
+
+        return acc;
+      }, { total: 0, local: 0, empate: 0, visitante: 0, sinPrediccion: 0, aciertos: 0, errores: 0, pendientes: 0 });
+
+      const resultado = partido.resultado_real || "Pendiente";
+
+      showMatchView();
+      matchDetailEl.innerHTML = `
+        <div class="match-detail-card">
+          <div class="match-detail-title">
+            ${teamWithFlag(partido.local)}
+            <span>vs</span>
+            ${teamWithFlag(partido.visitante)}
+          </div>
+          <div class="match-meta">Grupo ${escapeHTML(partido.grupo)} · ${formatDate(partido.fecha)} · ${escapeHTML(partido.hora)}</div>
+          <div class="match-summary-pills">
+            <span class="pill blue">Resultado: ${teamWithFlag(resultado)}</span>
+            <span class="pill green">${totals.aciertos} aciertos</span>
+            <span class="pill red">${totals.errores} errores</span>
+            <span class="pill gray">${totals.pendientes} pendientes</span>
+          </div>
+          <div class="match-summary-pills">
+            <span class="pill blue">${teamWithFlag(partido.local)}: ${totals.local}</span>
+            <span class="pill yellow">Empate: ${totals.empate}</span>
+            <span class="pill blue">${teamWithFlag(partido.visitante)}: ${totals.visitante}</span>
+            ${totals.sinPrediccion ? `<span class="pill gray">Sin predicción: ${totals.sinPrediccion}</span>` : ""}
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Participante</th>
+                <th>Predicción</th>
+                <th>Resultado</th>
+                <th>Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr class="${row.status}">
+                  <td><strong>${escapeHTML(row.nombre)}</strong></td>
+                  <td>${renderPredictionChoice(partido, row.prediccion)}</td>
+                  <td>${renderStatusPill(row.status)}</td>
+                  <td><strong>${row.puntos}</strong></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      matchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function sortMatchPredictionRows(a, b) {
+      const order = { local: 1, empate: 2, visitante: 3, none: 4 };
+      return (order[a.tipo] || 5) - (order[b.tipo] || 5) || a.nombre.localeCompare(b.nombre, "es");
+    }
+
+    function renderPredictionChoice(partido, prediccion) {
+      const tipo = getPredictionType(partido, prediccion);
+      let label = prediccion;
+
+      if (tipo === "local") label = partido.local;
+      if (tipo === "visitante") label = partido.visitante;
+
+      return `<span class="prediction-choice">${teamWithFlag(label)}</span>`;
+    }
+
+    function renderStatusPill(status) {
+      if (status === "ok") return `<span class="pill green">Acertó</span>`;
+      if (status === "fail") return `<span class="pill red">Falló</span>`;
+      return `<span class="pill gray">Pendiente</span>`;
+    }
+
+
     function renderParticipantDetail(nombre) {
       if (!nombre) {
         detailEl.className = "detail-empty";
@@ -1070,7 +1306,7 @@
               </thead>
               <tbody>
                 ${rows.map(row => `
-                  <tr class="${row.status}">
+                  <tr class="${row.status} clickable-match-row" onclick="selectMatch('${escapeForAttribute(row.partido.id_partido)}')" title="Ver predicciones de este partido">
                     <td>
                       ${renderPredictionMatch(row.partido, row.prediccion)}
                       <div class="match-meta">${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
@@ -1218,6 +1454,12 @@
       const hash = decodeURIComponent(window.location.hash || "");
       const match = hash.match(/participante=([^&]+)/);
       return match ? match[1] : null;
+    }
+
+    function getMatchFromHash() {
+      const hash = decodeURIComponent(window.location.hash || "");
+      const match = hash.match(/partido=([^&]+)/);
+      return match ? normalizeIdPartido(match[1]) : null;
     }
 
     function setLoading(isLoading) {
