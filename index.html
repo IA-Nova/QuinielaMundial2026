@@ -1358,16 +1358,15 @@
     }
 
     function scrollToParticipantGroup(group) {
-      if (!group) {
-        detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
+      const normalizedGroup = normalizeGroup(group);
 
-      const groupEl = document.getElementById(getParticipantGroupAnchorId(group));
+      // Si no viene un grupo explícito en el hash, no hacemos scroll automático.
+      // Así, al entrar por primera vez a la página, se queda arriba.
+      if (!normalizedGroup) return;
+
+      const groupEl = document.getElementById(getParticipantGroupAnchorId(normalizedGroup));
       if (groupEl) {
         groupEl.scrollIntoView({ behavior: "smooth", block: "start" });
-      } else {
-        detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
