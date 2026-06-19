@@ -548,6 +548,14 @@
 
     .footer-note { color: var(--muted); font-size: 0.84rem; margin-top: 18px; text-align: center; }
 
+    .hidden-general-section {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffdf4, #ffffff);
+    }
+
+    .hidden-general-section .rank-row { cursor: default; }
+    .hidden-general-section .rank-row:hover { transform: none; border-color: var(--border); background: white; }
+
     @media (max-width: 900px) {
       .group-grid { grid-template-columns: 1fr; }
     }
@@ -582,7 +590,6 @@
   <header>
     <div class="header-inner">
       <h1>Ranking Quiniela Mundial 2026</h1>
-      <p class="subtitle">Ranking separado por grupo. El ganador de cada grupo es quien consiga más puntos en los partidos de ese grupo.</p>
     </div>
   </header>
 
@@ -601,7 +608,6 @@
       <div class="section-head">
         <div>
           <h2>Partidos pendientes de hoy</h2>
-          <p class="hint">Solo aparecen los partidos de hoy que todavía no tienen resultado real capturado.</p>
         </div>
       </div>
       <div id="todayPendingMatches" class="today-pending-list"></div>
@@ -609,11 +615,21 @@
 
     <div id="errorBox" class="error-box" hidden></div>
 
+    <section id="hiddenGeneralSection" class="hidden-general-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Tabla oculta: ranking general</h2>
+          <p class="hint">Ranking total sumando todos los grupos. Esta sección solo aparece al entrar con <strong>#TablaOculta</strong> en la URL.</p>
+        </div>
+      </div>
+      <div id="hiddenGeneralRanking" class="ranking-list"></div>
+    </section>
+
     <section id="rankingsSection">
       <div class="section-head">
         <div>
           <h2>Rankings por grupo</h2>
-          <p class="hint">Da click en cualquier participante para ver su quiniela individual, también agrupada por grupos.</p>
+          <p class="hint">Da click en cualquier participante para ver su quiniela individual.</p>
         </div>
       </div>
       <div id="groupRankings" class="group-grid"></div>
@@ -623,7 +639,6 @@
       <div class="section-head">
         <div>
           <h2>Vista individual por grupos</h2>
-          <p class="hint">Cada bloque muestra puntos, aciertos, errores y pendientes de ese participante dentro del grupo.</p>
         </div>
       </div>
       <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
@@ -707,6 +722,8 @@
     const groupRankingsEl = document.getElementById("groupRankings");
     const todayPendingMatchesEl = document.getElementById("todayPendingMatches");
     const todayPendingSection = document.getElementById("todayPendingSection");
+    const hiddenGeneralSection = document.getElementById("hiddenGeneralSection");
+    const hiddenGeneralRankingEl = document.getElementById("hiddenGeneralRanking");
     const rankingsSection = document.getElementById("rankingsSection");
     const detailSection = document.getElementById("detailSection");
     const matchSection = document.getElementById("matchSection");
@@ -751,6 +768,7 @@
         selectedParticipant = getParticipantFromHash() || getParticipants()[0] || null;
 
         renderTodayPendingMatches();
+        renderHiddenGeneralRanking();
         renderGroupRankings();
         renderParticipantDetail(selectedParticipant);
         renderRouteFromHash({ allowGroupScroll: false });
@@ -987,6 +1005,50 @@
     }
 
 
+    function shouldShowHiddenGeneralRanking() {
+      return normalizeComparable((window.location.hash || "").replace(/^#/, "")) === normalizeComparable("TablaOculta");
+    }
+
+    function calculateGeneralRanking() {
+      return getParticipants().map(nombre => calculateParticipantGlobalStats(nombre))
+        .sort(sortRankingRows);
+    }
+
+    function renderHiddenGeneralRanking() {
+      const ranking = calculateGeneralRanking();
+
+      if (!hiddenGeneralRankingEl) return;
+
+      if (!ranking.length) {
+        hiddenGeneralRankingEl.innerHTML = `<div class="detail-empty">No hay participantes para mostrar.</div>`;
+        return;
+      }
+
+      const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+      hiddenGeneralRankingEl.innerHTML = ranking.map((item, index) => renderGeneralRankRow(item, index + 1, maxPoints)).join("");
+    }
+
+    function renderGeneralRankRow(item, position, maxPoints) {
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+
+      return `
+        <article class="rank-row">
+          <div class="rank-pos">${position}</div>
+          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          <div class="bar-track" aria-label="${item.puntos} puntos generales">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
+
     function renderTodayPendingMatches() {
       const today = getTodayISODate();
       const pendingToday = partidos
@@ -1080,6 +1142,7 @@
       // El grupo se usa únicamente para hacer scroll en este click,
       // así al recargar con F5 la página vuelve a iniciar arriba.
       history.pushState(null, "", `#participante=${encodeURIComponent(nombre)}`);
+      hiddenGeneralSection.hidden = true;
 
       renderGroupRankings();
       renderParticipantDetail(nombre);
@@ -1116,6 +1179,7 @@
         return;
       }
 
+      const showHiddenGeneral = shouldShowHiddenGeneralRanking();
       const participantFromHash = getParticipantFromHash();
       const groupFromHash = getGroupFromHash();
       if (participantFromHash) {
@@ -1123,6 +1187,8 @@
       }
 
       showMainView();
+      renderHiddenGeneralRanking();
+      hiddenGeneralSection.hidden = !showHiddenGeneral;
       renderGroupRankings();
       renderParticipantDetail(selectedParticipant);
       scrollToParticipantGroup(groupFromHash);
@@ -1137,6 +1203,7 @@
 
     function showMatchView() {
       todayPendingSection.hidden = true;
+      hiddenGeneralSection.hidden = true;
       rankingsSection.hidden = true;
       detailSection.hidden = true;
       matchSection.hidden = false;
@@ -1345,7 +1412,7 @@
         acc.errores += stats.errores;
         acc.pendientes += stats.pendientes;
         return acc;
-      }, { puntos: 0, aciertos: 0, errores: 0, pendientes: 0 });
+      }, { nombre, puntos: 0, aciertos: 0, errores: 0, pendientes: 0 });
     }
 
     function calculateGroupStatsForParticipant(nombre, group) {
