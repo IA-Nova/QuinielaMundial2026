@@ -271,6 +271,63 @@
       padding: 14px;
     }
 
+    .group-card.finished {
+      border-color: #fbbf24;
+      background: linear-gradient(180deg, #fffdf3, #fbfdff 72%);
+    }
+
+    .group-card-head.clickable-group-head {
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 8px;
+      margin: -8px -8px 12px;
+      transition: background 0.15s ease;
+    }
+
+    .group-card-head.clickable-group-head:hover {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .group-status-line {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .group-toggle-btn {
+      background: #111827;
+      color: white;
+      min-height: 34px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+    }
+
+    .group-toggle-btn:hover {
+      background: #374151;
+    }
+
+    .winner-row {
+      border-color: #fbbf24;
+      background: #fffbeb;
+    }
+
+    .winner-row:hover,
+    .winner-row.active {
+      border-color: #f59e0b;
+      background: #fff7d6;
+    }
+
+    .winner-row .rank-pos {
+      background: var(--yellow-soft);
+      color: #92400e;
+    }
+
     .group-card-head {
       display: flex;
       justify-content: space-between;
@@ -629,7 +686,7 @@
       <div class="section-head">
         <div>
           <h2>Rankings por grupo</h2>
-          <p class="hint">Da click en cualquier participante para ver su quiniela individual.</p>
+          <p class="hint">Da click en cualquier participante para ver su quiniela individual. Si un grupo ya terminó, se muestran solo sus ganadores; da click en el grupo para ver la tabla completa.</p>
         </div>
       </div>
       <div id="groupRankings" class="group-grid"></div>
@@ -715,6 +772,7 @@
     let partidos = [];
     let predicciones = [];
     let rankingsByGroup = new Map();
+    let expandedFinishedGroups = new Set();
     let selectedParticipant = null;
 
     const statusEl = document.getElementById("status");
@@ -1025,7 +1083,7 @@
       }
 
       const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
-      hiddenGeneralRankingEl.innerHTML = ranking.map((item, index) => renderGeneralRankRow(item, index + 1, maxPoints)).join("");
+      hiddenGeneralRankingEl.innerHTML = ranking.map(item => renderGeneralRankRow(item, getPositionByPoints(item, ranking), maxPoints)).join("");
     }
 
     function renderGeneralRankRow(item, position, maxPoints) {
@@ -1085,6 +1143,7 @@
 
     function renderGroupRankings() {
       const query = normalizeComparable(searchInput.value);
+      const isSearching = Boolean(query);
       const groups = getGroups();
 
       if (!groups.length) {
@@ -1093,33 +1152,123 @@
       }
 
       groupRankingsEl.innerHTML = groups.map(group => {
+        const normalizedGroup = normalizeGroup(group);
         const groupRanking = rankingsByGroup.get(group) || [];
         const filteredRanking = groupRanking.filter(item => normalizeComparable(item.nombre).includes(query));
         const maxPoints = Math.max(...groupRanking.map(item => item.puntos), 1);
         const teams = getTeamsForGroup(group);
+        const finished = isGroupFinished(group);
+        const expanded = expandedFinishedGroups.has(normalizedGroup);
+        const showWinnersOnly = finished && !expanded && !isSearching;
+        const winners = getGroupWinners(groupRanking);
+        const rowsToRender = showWinnersOnly ? winners : filteredRanking;
+        const cardClass = `group-card ${finished ? "finished" : ""}`;
+        const headClass = `group-card-head ${finished ? "clickable-group-head" : ""}`;
+        const headAction = finished ? `onclick="toggleGroupTable('${escapeForAttribute(group)}')" title="Ver u ocultar tabla completa del Grupo ${escapeHTML(group)}"` : "";
+        const statusText = getGroupStatusText(finished, expanded, isSearching, winners.length);
+        const toggleLabel = expanded ? "Ocultar tabla completa" : "Ver tabla completa";
 
         return `
-          <article class="group-card">
-            <div class="group-card-head">
+          <article class="${cardClass}" id="${getGroupCardAnchorId(group)}">
+            <div class="${headClass}" ${headAction}>
               <div class="group-title"><span class="group-badge">${escapeHTML(group)}</span> Grupo ${escapeHTML(group)}</div>
               <div class="group-teams group-team-list">${teams.map(teamWithFlag).join("")}</div>
             </div>
+
+            ${finished ? `
+              <div class="group-status-line">
+                <span class="pill yellow">Finalizado</span>
+                <span>${statusText}</span>
+                ${!isSearching ? `<button class="group-toggle-btn" type="button" onclick="event.stopPropagation(); toggleGroupTable('${escapeForAttribute(group)}')">${toggleLabel}</button>` : ""}
+              </div>
+            ` : `
+              <div class="group-status-line">
+                <span class="pill blue">En juego</span>
+                <span>Mostrando tabla completa del grupo.</span>
+              </div>
+            `}
+
             <div class="ranking-list">
-              ${filteredRanking.length ? filteredRanking.map((item) => renderRankRow(item, groupRanking, maxPoints, group)).join("") : `<div class="detail-empty">No se encontró ningún participante.</div>`}
+              ${rowsToRender.length ? rowsToRender.map((item) => showWinnersOnly ? renderWinnerRankRow(item, groupRanking, maxPoints, group) : renderRankRow(item, groupRanking, maxPoints, group)).join("") : `<div class="detail-empty">No se encontró ningún participante.</div>`}
             </div>
           </article>
         `;
       }).join("");
     }
 
+    function isGroupFinished(group) {
+      const groupMatches = partidos.filter(partido => partido.grupo === group);
+      return groupMatches.length > 0 && groupMatches.every(partido => Boolean(partido.resultado_real));
+    }
+
+    function getGroupWinners(groupRanking) {
+      if (!groupRanking.length) return [];
+      const maxPoints = Math.max(...groupRanking.map(item => item.puntos));
+      return groupRanking.filter(item => item.puntos === maxPoints);
+    }
+
+    function getGroupStatusText(finished, expanded, isSearching, winnersCount) {
+      if (!finished) return "Tabla completa del grupo (Grupo aún en juego).";
+      if (isSearching) return "Búsqueda activa: mostrando coincidencias dentro de la tabla completa.";
+      if (expanded) return "Tabla completa final del grupo.";
+      return winnersCount === 1 ? "Mostrando ganador del grupo." : `Mostrando ganadores del grupo.`;
+    }
+
+    function toggleGroupTable(group) {
+      const normalizedGroup = normalizeGroup(group);
+      if (!normalizedGroup) return;
+
+      if (expandedFinishedGroups.has(normalizedGroup)) {
+        expandedFinishedGroups.delete(normalizedGroup);
+      } else {
+        expandedFinishedGroups.add(normalizedGroup);
+      }
+
+      renderGroupRankings();
+      const groupCard = document.getElementById(getGroupCardAnchorId(normalizedGroup));
+      if (groupCard) {
+        groupCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    window.toggleGroupTable = toggleGroupTable;
+
+    function getGroupCardAnchorId(group) {
+      const cleanGroup = normalizeGroup(group) || "sin-grupo";
+      return `ranking-group-${cleanGroup.replace(/[^A-Z0-9_-]/g, "")}`;
+    }
+
+    function renderWinnerRankRow(item, groupRanking, maxPoints, group) {
+      const position = getPositionByPoints(item, groupRanking);
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+      const isActive = item.nombre === selectedParticipant ? "active" : "";
+
+      return `
+        <article class="rank-row winner-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
+          <div class="rank-pos" title="Puesto ${position}">🏆</div>
+          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          <div class="bar-track" aria-label="${item.puntos} puntos">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill yellow">Ganador</span>
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
     function renderRankRow(item, groupRanking, maxPoints, group) {
-      const originalPosition = groupRanking.findIndex(r => r.nombre === item.nombre) + 1;
+      const position = getPositionByPoints(item, groupRanking);
       const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
       const isActive = item.nombre === selectedParticipant ? "active" : "";
 
       return `
         <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
-          <div class="rank-pos">${originalPosition}</div>
+          <div class="rank-pos">${position}</div>
           <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
           <div class="bar-track" aria-label="${item.puntos} puntos">
             <div class="bar-fill" style="width: ${width}%"></div>
@@ -1367,7 +1516,7 @@
           <div class="detail-group-head">
             <div>
               <strong>Grupo ${escapeHTML(group)}</strong>
-              <span class="pill yellow">Lugar ${position}</span>
+              <span class="pill yellow">Puesto ${position}</span>
             </div>
             <div>
               <span class="pill blue">${stats.puntos} pts</span>
@@ -1422,7 +1571,19 @@
 
     function getPositionInGroup(nombre, group) {
       const ranking = rankingsByGroup.get(group) || [];
-      const index = ranking.findIndex(item => item.nombre === nombre);
+      return getPositionInRanking(nombre, ranking);
+    }
+
+    function getPositionInRanking(nombre, ranking) {
+      const item = ranking.find(row => row.nombre === nombre);
+      if (!item) return "-";
+      return getPositionByPoints(item, ranking);
+    }
+
+    function getPositionByPoints(item, ranking) {
+      const orderedPoints = [...new Set(ranking.map(row => row.puntos))]
+        .sort((a, b) => b - a);
+      const index = orderedPoints.indexOf(item.puntos);
       return index >= 0 ? index + 1 : "-";
     }
 
