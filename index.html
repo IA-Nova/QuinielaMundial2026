@@ -394,6 +394,43 @@
 
     .participant-name { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+    .participant-name.with-prize {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      overflow: visible;
+      white-space: normal;
+    }
+
+    .participant-name.with-prize .name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .money-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid rgba(22, 163, 74, 0.18);
+      font-size: 0.76rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .money-tag.big {
+      padding: 6px 10px;
+      font-size: 0.92rem;
+    }
+
     .bar-track {
       height: 16px;
       background: #edf2f7;
@@ -432,6 +469,7 @@
     }
 
     .pill.green { background: var(--green-soft); color: var(--green); }
+    .pill.money { background: var(--green-soft); color: var(--green); }
     .pill.red { background: var(--red-soft); color: var(--red); }
     .pill.gray { background: var(--gray-soft); color: var(--gray); }
     .pill.blue { background: var(--primary-soft); color: var(--primary-dark); }
@@ -453,6 +491,13 @@
     }
 
     .participant-header h3 { margin: 0 0 6px; font-size: 1.5rem; }
+
+    .participant-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
     .big-score { text-align: right; font-weight: 900; font-size: 1.6rem; color: var(--primary-dark); }
 
     .detail-group { margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
@@ -686,7 +731,6 @@
       <div class="section-head">
         <div>
           <h2>Rankings por grupo</h2>
-          <p class="hint">Da click en cualquier participante para ver su quiniela individual. Si un grupo ya terminó, se muestran solo sus ganadores; da click en el grupo para ver la tabla completa.</p>
         </div>
       </div>
       <div id="groupRankings" class="group-grid"></div>
@@ -717,6 +761,7 @@
     const SPREADSHEET_ID = "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI";
     const GID_PARTIDOS = "337818473";
     const GID_PREDICCIONES = "1700471181";
+    const COSTO_POR_PARTICIPANTE_POR_GRUPO = 20;
     const FLAGS = {
       "México": "mx",
       "Sudáfrica": "za",
@@ -1207,6 +1252,62 @@
       return groupRanking.filter(item => item.puntos === maxPoints);
     }
 
+    function getGroupPrizePool() {
+      return getParticipants().length * COSTO_POR_PARTICIPANTE_POR_GRUPO;
+    }
+
+    function getGroupPrizeAmount(group) {
+      if (!isGroupFinished(group)) return 0;
+
+      const ranking = rankingsByGroup.get(group) || [];
+      const winners = getGroupWinners(ranking);
+      if (!winners.length) return 0;
+
+      return getGroupPrizePool() / winners.length;
+    }
+
+    function getParticipantPrizeInGroup(nombre, group) {
+      if (!isGroupFinished(group)) return 0;
+
+      const ranking = rankingsByGroup.get(group) || [];
+      const winners = getGroupWinners(ranking);
+      const isWinner = winners.some(item => item.nombre === nombre);
+
+      return isWinner ? getGroupPrizeAmount(group) : 0;
+    }
+
+    function calculateParticipantPrizeStats(nombre) {
+      const details = getGroups()
+        .map(group => ({ group, amount: getParticipantPrizeInGroup(nombre, group) }))
+        .filter(item => item.amount > 0);
+
+      const total = details.reduce((sum, item) => sum + item.amount, 0);
+      return { total, details };
+    }
+
+    function formatMoney(amount) {
+      const value = Number(amount) || 0;
+      const isInteger = Math.abs(value - Math.round(value)) < 0.001;
+
+      return value.toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN",
+        minimumFractionDigits: isInteger ? 0 : 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function renderParticipantNameWithPrize(nombre, prizeAmount = 0) {
+      const hasPrize = prizeAmount > 0;
+
+      return `
+        <div class="participant-name ${hasPrize ? "with-prize" : ""}" title="${escapeHTML(nombre)}">
+          <span class="name-text">${escapeHTML(nombre)}</span>
+          ${hasPrize ? `<span class="money-tag">${formatMoney(prizeAmount)}</span>` : ""}
+        </div>
+      `;
+    }
+
     function getGroupStatusText(finished, expanded, isSearching, winnersCount) {
       if (!finished) return "Tabla completa del grupo (Grupo aún en juego).";
       if (isSearching) return "Búsqueda activa: mostrando coincidencias dentro de la tabla completa.";
@@ -1240,13 +1341,14 @@
 
     function renderWinnerRankRow(item, groupRanking, maxPoints, group) {
       const position = getPositionByPoints(item, groupRanking);
+      const prizeAmount = getParticipantPrizeInGroup(item.nombre, group);
       const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
       const isActive = item.nombre === selectedParticipant ? "active" : "";
 
       return `
         <article class="rank-row winner-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
           <div class="rank-pos" title="Puesto ${position}">🏆</div>
-          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          ${renderParticipantNameWithPrize(item.nombre, prizeAmount)}
           <div class="bar-track" aria-label="${item.puntos} puntos">
             <div class="bar-fill" style="width: ${width}%"></div>
           </div>
@@ -1263,13 +1365,14 @@
 
     function renderRankRow(item, groupRanking, maxPoints, group) {
       const position = getPositionByPoints(item, groupRanking);
+      const prizeAmount = getParticipantPrizeInGroup(item.nombre, group);
       const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
       const isActive = item.nombre === selectedParticipant ? "active" : "";
 
       return `
         <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
           <div class="rank-pos">${position}</div>
-          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          ${renderParticipantNameWithPrize(item.nombre, prizeAmount)}
           <div class="bar-track" aria-label="${item.puntos} puntos">
             <div class="bar-fill" style="width: ${width}%"></div>
           </div>
@@ -1477,12 +1580,16 @@
       const predMap = buildPredictionMap();
       const groups = getGroups();
       const globalStats = calculateParticipantGlobalStats(nombre);
+      const prizeStats = calculateParticipantPrizeStats(nombre);
 
       detailEl.className = "";
       detailEl.innerHTML = `
         <div class="participant-header">
           <div>
-            <h3>${escapeHTML(nombre)}</h3>
+            <h3 class="participant-title">
+              <span>${escapeHTML(nombre)}</span>
+              <span class="money-tag big">Ganado: ${formatMoney(prizeStats.total)}</span>
+            </h3>
             <div>
               <span class="pill blue">Resumen total</span>
               <span class="pill green">${globalStats.aciertos} aciertos</span>
@@ -1510,6 +1617,7 @@
 
       const stats = calculateGroupStatsForParticipant(nombre, group);
       const position = getPositionInGroup(nombre, group);
+      const groupPrizeAmount = getParticipantPrizeInGroup(nombre, group);
 
       return `
         <div class="detail-group" id="${getParticipantGroupAnchorId(group)}">
