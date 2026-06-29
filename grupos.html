@@ -1180,33 +1180,6 @@
       `;
     }
 
-
-    function renderTodayPendingMatches() {
-      const today = getTodayISODate();
-      const pendingToday = partidos
-        .filter(partido => normalizeDate(partido.fecha) === today && !partido.resultado_real)
-        .sort(sortByDateAndHour);
-
-      if (!pendingToday.length) {
-        todayPendingMatchesEl.innerHTML = `<div class="detail-empty">No quedan partidos pendientes para hoy.</div>`;
-        return;
-      }
-
-      todayPendingMatchesEl.innerHTML = pendingToday.map(partido => `
-        <article class="today-match-card clickable-match-row" onclick="selectMatch('${escapeForAttribute(partido.id_partido)}')" title="Ver predicciones de este partido">
-          <div class="today-match-time">${escapeHTML(partido.hora || "--:--")}</div>
-          <div class="today-match-info">
-            <div class="today-match-title">
-              ${teamWithFlag(partido.local)}
-              <span>vs</span>
-              ${teamWithFlag(partido.visitante)}
-            </div>
-            <div class="today-match-meta">Grupo ${escapeHTML(partido.grupo)} · ${formatDate(partido.fecha)}</div>
-          </div>
-        </article>
-      `).join("");
-    }
-
     function getTodayISODate() {
       const today = new Date();
       const year = today.getFullYear();
