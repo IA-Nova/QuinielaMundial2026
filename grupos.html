@@ -113,17 +113,6 @@
 
     .status { margin: 14px 2px 0; color: var(--muted); font-size: 0.92rem; }
 
-    .today-pending-section {
-      margin-top: 14px;
-      padding: 16px;
-    }
-
-    .today-pending-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
     .today-match-card {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -702,7 +691,6 @@
     @media (max-width: 760px) {
       .toolbar { grid-template-columns: 1fr; }
 
-      .today-pending-list { grid-template-columns: 1fr; }
       .grid-summary { grid-template-columns: repeat(2, 1fr); }
       section { padding: 14px; }
       .section-head, .participant-header { display: block; }
@@ -852,8 +840,6 @@
     const statusEl = document.getElementById("status");
     const errorBox = document.getElementById("errorBox");
     const groupRankingsEl = document.getElementById("groupRankings");
-    const todayPendingMatchesEl = document.getElementById("todayPendingMatches");
-    const todayPendingSection = document.getElementById("todayPendingSection");
     const hiddenGeneralSection = document.getElementById("hiddenGeneralSection");
     const hiddenGeneralRankingEl = document.getElementById("hiddenGeneralRanking");
     const rankingsSection = document.getElementById("rankingsSection");
@@ -1448,14 +1434,12 @@
     }
 
     function showMainView() {
-      todayPendingSection.hidden = false;
       rankingsSection.hidden = false;
       detailSection.hidden = false;
       matchSection.hidden = true;
     }
 
     function showMatchView() {
-      todayPendingSection.hidden = true;
       hiddenGeneralSection.hidden = true;
       rankingsSection.hidden = true;
       detailSection.hidden = true;
