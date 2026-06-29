@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Quiniela Mundial 2026 por Grupos</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #172033;
+      --muted: #697386;
+      --border: #dde5f0;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-soft: #dbeafe;
+      --green: #16a34a;
+      --green-soft: #dcfce7;
+      --red: #dc2626;
+      --red-soft: #fee2e2;
+      --gray: #6b7280;
+      --gray-soft: #f3f4f6;
+      --yellow: #f59e0b;
+      --yellow-soft: #fef3c7;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: linear-gradient(135deg, #1d4ed8, #22c55e);
+      color: white;
+      padding: 28px 18px 34px;
+    }
+
+    .header-inner,
+    main {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.7rem, 4vw, 2.8rem);
+      line-height: 1.1;
+    }
+
+    .subtitle {
+      margin: 0;
+      max-width: 820px;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: 1rem;
+    }
+
+    main { padding: 22px 14px 44px; }
+
+    .toolbar {
+      margin-top: -34px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
+
+    .search-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+    label { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+
+    input[type="search"] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input[type="search"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    button {
+      border: 0;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+      min-height: 44px;
+    }
+
+    button:hover { background: var(--primary-dark); transform: translateY(-1px); }
+    button:disabled { opacity: .7; cursor: not-allowed; transform: none; }
+
+    .status { margin: 14px 2px 0; color: var(--muted); font-size: 0.92rem; }
+
+    .today-pending-section {
+      margin-top: 14px;
+      padding: 16px;
+    }
+
+    .today-pending-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .today-match-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+
+    .today-match-time {
+      min-width: 58px;
+      text-align: center;
+      border-radius: 12px;
+      padding: 8px 7px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .today-match-info {
+      min-width: 0;
+    }
+
+    .today-match-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-weight: 900;
+      color: #111827;
+    }
+
+    .today-match-meta {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .clickable-match-row { cursor: pointer; }
+    .clickable-match-row:hover td { filter: brightness(0.98); }
+
+    .match-detail-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fbfdff;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .match-detail-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      font-size: 1.35rem;
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    .match-detail-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .secondary-btn {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .secondary-btn:hover {
+      background: #d1d5db;
+    }
+
+    .match-summary-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .prediction-choice {
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+
+    .grid-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .metric strong { display: block; font-size: 1.5rem; margin-bottom: 4px; }
+    .metric span { color: var(--muted); font-size: 0.86rem; }
+
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      margin-top: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    h2 { margin: 0; font-size: 1.35rem; }
+    h3 { margin: 0; }
+    .hint { color: var(--muted); margin: 6px 0 0; font-size: 0.92rem; }
+
+    .group-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .group-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #fbfdff;
+      padding: 14px;
+    }
+
+    .group-card.finished {
+      border-color: #fbbf24;
+      background: linear-gradient(180deg, #fffdf3, #fbfdff 72%);
+    }
+
+    .group-card-head.clickable-group-head {
+      cursor: pointer;
+      border-radius: 12px;
+      padding: 8px;
+      margin: -8px -8px 12px;
+      transition: background 0.15s ease;
+    }
+
+    .group-card-head.clickable-group-head:hover {
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .group-status-line {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .group-toggle-btn {
+      background: #111827;
+      color: white;
+      min-height: 34px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+    }
+
+    .group-toggle-btn:hover {
+      background: #374151;
+    }
+
+    .winner-row {
+      border-color: #fbbf24;
+      background: #fffbeb;
+    }
+
+    .winner-row:hover,
+    .winner-row.active {
+      border-color: #f59e0b;
+      background: #fff7d6;
+    }
+
+    .winner-row .rank-pos {
+      background: var(--yellow-soft);
+      color: #92400e;
+    }
+
+    .group-card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .group-title {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 1.08rem;
+      font-weight: 900;
+    }
+
+    .group-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: white;
+      font-weight: 900;
+    }
+
+    .group-teams {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .ranking-list { display: flex; flex-direction: column; gap: 9px; }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 34px minmax(100px, 150px) 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: white;
+      cursor: pointer;
+      transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+
+    .rank-row:hover,
+    .rank-row.active { border-color: var(--primary); background: #f8fbff; transform: translateY(-1px); }
+
+    .rank-pos {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 900;
+      font-size: 0.82rem;
+    }
+
+    .participant-name { font-weight: 900; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .participant-name.with-prize {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      overflow: visible;
+      white-space: normal;
+    }
+
+    .participant-name.with-prize .name-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .money-tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: var(--green-soft);
+      color: var(--green);
+      border: 1px solid rgba(22, 163, 74, 0.18);
+      font-size: 0.76rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .money-tag.big {
+      padding: 6px 10px;
+      font-size: 0.92rem;
+    }
+
+    .bar-track {
+      height: 16px;
+      background: #edf2f7;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bar-fill {
+      height: 100%;
+      min-width: 4px;
+      background: linear-gradient(90deg, #2563eb, #22c55e);
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    .rank-points { font-weight: 900; white-space: nowrap; font-size: .92rem; }
+
+    .mini-stats {
+      grid-column: 2 / -1;
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 800;
+      font-size: 0.76rem;
+    }
+
+    .pill.green { background: var(--green-soft); color: var(--green); }
+    .pill.money { background: var(--green-soft); color: var(--green); }
+    .pill.red { background: var(--red-soft); color: var(--red); }
+    .pill.gray { background: var(--gray-soft); color: var(--gray); }
+    .pill.blue { background: var(--primary-soft); color: var(--primary-dark); }
+    .pill.yellow { background: var(--yellow-soft); color: #92400e; }
+
+    .detail-empty {
+      color: var(--muted);
+      background: var(--gray-soft);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .participant-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .participant-header h3 { margin: 0 0 6px; font-size: 1.5rem; }
+
+    .participant-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .big-score { text-align: right; font-weight: 900; font-size: 1.6rem; color: var(--primary-dark); }
+
+    .detail-group { margin-top: 16px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .detail-group:first-of-type { margin-top: 0; }
+
+    .detail-group-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 14px;
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-group-head strong { font-size: 1.02rem; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; min-width: 820px; background: white; }
+    th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 0.92rem; }
+    th { background: #f8fafc; color: #475569; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    tr:last-child td { border-bottom: 0; }
+    tr.ok td { background: var(--green-soft); }
+    tr.fail td { background: var(--red-soft); }
+    tr.pending td { background: #f8fafc; color: #475569; }
+
+    .match-title { font-weight: 900; color: #111827; }
+    .match-meta { color: var(--muted); font-size: 0.8rem; margin-top: 3px; }
+
+    .prediction-match {
+      display: grid;
+      grid-template-columns: minmax(115px, 1fr) auto minmax(115px, 1fr);
+      align-items: center;
+      gap: 8px;
+      font-weight: 900;
+      color: #111827;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .prediction-side {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .prediction-side .team-name {
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .prediction-side .team-name span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .prediction-side.local { justify-content: flex-end; text-align: right; }
+    .prediction-side.visitante { justify-content: flex-start; text-align: left; }
+
+    .prediction-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #64748b;
+      font-weight: 900;
+      white-space: nowrap;
+      font-size: 0.84rem;
+      letter-spacing: 0.03em;
+    }
+
+    .prediction-box {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #94a3b8;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      color: transparent;
+      font-size: 16px;
+      line-height: 1;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .prediction-box.checked {
+      border-color: var(--primary-dark);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+    }
+
+    .prediction-box.checked::before { content: "×"; }
+
+    .prediction-help {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+
+    .team-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .team-flag {
+      width: 22px;
+      height: 16px;
+      object-fit: cover;
+      border-radius: 3px;
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+      flex: 0 0 auto;
+      background: white;
+    }
+
+    .match-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .group-team-list {
+      display: flex;
+      gap: 6px 10px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .error-box {
+      background: var(--red-soft);
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 14px;
+      white-space: pre-wrap;
+    }
+
+    .footer-note { color: var(--muted); font-size: 0.84rem; margin-top: 18px; text-align: center; }
+
+    .hidden-general-section {
+      border-color: #f59e0b;
+      background: linear-gradient(180deg, #fffdf4, #ffffff);
+    }
+
+    .hidden-general-section .rank-row { cursor: default; }
+    .hidden-general-section .rank-row:hover { transform: none; border-color: var(--border); background: white; }
+
+    @media (max-width: 900px) {
+      .group-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .toolbar { grid-template-columns: 1fr; }
+
+      .today-pending-list { grid-template-columns: 1fr; }
+      .grid-summary { grid-template-columns: repeat(2, 1fr); }
+      section { padding: 14px; }
+      .section-head, .participant-header { display: block; }
+      .big-score { text-align: left; margin-top: 8px; }
+      .rank-row { grid-template-columns: 32px 1fr auto; gap: 9px; }
+      .bar-track { grid-column: 2 / -1; }
+      .mini-stats { grid-column: 1 / -1; }
+      .group-card-head { display: block; }
+      .group-teams { text-align: left; margin-top: 6px; }
+      .prediction-match { grid-template-columns: minmax(92px, 1fr) auto minmax(92px, 1fr); gap: 5px; }
+      .prediction-box { width: 19px; height: 19px; border-radius: 5px; font-size: 14px; }
+      .prediction-side { gap: 4px; }
+      .prediction-center { font-size: 0.72rem; }
+    }
+
+    @media (max-width: 480px) {
+      header { padding-top: 24px; }
+      .grid-summary { grid-template-columns: 1fr; }
+      .rank-points { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Ranking Quiniela Mundial 2026</h1>
+    </div>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <label for="searchInput">Buscar participante</label>
+        <input id="searchInput" type="search" placeholder="Ej. Belsain, Blanca..." />
+      </div>
+      <button id="reloadBtn" type="button">Actualizar datos</button>
+    </div>
+
+    <p id="status" class="status">Cargando datos...</p>
+
+    <section id="todayPendingSection" class="today-pending-section">
+      <div class="section-head">
+        <div>
+          <h2>Partidos pendientes de hoy</h2>
+        </div>
+      </div>
+      <div id="todayPendingMatches" class="today-pending-list"></div>
+    </section>
+
+    <div id="errorBox" class="error-box" hidden></div>
+
+    <section id="hiddenGeneralSection" class="hidden-general-section" hidden>
+      <div class="section-head">
+        <div>
+          <h2>Tabla oculta: ranking general</h2>
+          <p class="hint">Ranking total sumando todos los grupos. Esta sección solo aparece al entrar con <strong>#TablaOculta</strong> en la URL.</p>
+        </div>
+      </div>
+      <div id="hiddenGeneralRanking" class="ranking-list"></div>
+    </section>
+
+    <section id="rankingsSection">
+      <div class="section-head">
+        <div>
+          <h2>Rankings por grupo</h2>
+        </div>
+      </div>
+      <div id="groupRankings" class="group-grid"></div>
+    </section>
+
+    <section id="detailSection">
+      <div class="section-head">
+        <div>
+          <h2>Vista individual por grupos</h2>
+        </div>
+      </div>
+      <div id="participantDetail" class="detail-empty">Selecciona un participante del ranking.</div>
+    </section>
+
+    <section id="matchSection" hidden>
+      <div class="match-detail-actions">
+        <div>
+          <h2>Predicciones por partido</h2>
+          <p class="hint">Aquí puedes revisar qué apostó cada participante para el partido seleccionado.</p>
+        </div>
+        <button class="secondary-btn" type="button" onclick="goBackToParticipant()">Volver</button>
+      </div>
+      <div id="matchDetail"></div>
+    </section>
+  </main>
+
+  <script>
+    const SPREADSHEET_ID = "1BFHnEr4MC_Vm8lOwZyKAxpnqqzeYzGhphRqhnvbFhuI";
+    const GID_PARTIDOS = "337818473";
+    const GID_PREDICCIONES = "1700471181";
+    const COSTO_POR_PARTICIPANTE_POR_GRUPO = 20;
+    const FLAGS = {
+      "México": "mx",
+      "Sudáfrica": "za",
+      "Corea del Sur": "kr",
+      "Chequia": "cz",
+      "Canadá": "ca",
+      "Bosnia-Herzegovina": "ba",
+      "Qatar": "qa",
+      "Suiza": "ch",
+      "Brasil": "br",
+      "Marruecos": "ma",
+      "Haití": "ht",
+      "Escocia": "gb-sct",
+      "Estados Unidos": "us",
+      "Paraguay": "py",
+      "Australia": "au",
+      "Turquía": "tr",
+      "Alemania": "de",
+      "Curazao": "cw",
+      "Costa de Marfil": "ci",
+      "Ecuador": "ec",
+      "Países Bajos": "nl",
+      "Japón": "jp",
+      "Suecia": "se",
+      "Túnez": "tn",
+      "Bélgica": "be",
+      "Egipto": "eg",
+      "Irán": "ir",
+      "Nueva Zelanda": "nz",
+      "España": "es",
+      "Cabo Verde": "cv",
+      "Arabia Saudita": "sa",
+      "Uruguay": "uy",
+      "Francia": "fr",
+      "Senegal": "sn",
+      "Irak": "iq",
+      "Noruega": "no",
+      "Argentina": "ar",
+      "Argelia": "dz",
+      "Austria": "at",
+      "Jordania": "jo",
+      "Portugal": "pt",
+      "RD Congo": "cd",
+      "Uzbekistán": "uz",
+      "Colombia": "co",
+      "Inglaterra": "gb-eng",
+      "Croacia": "hr",
+      "Ghana": "gh",
+      "Panamá": "pa"
+    };
+
+
+    let partidos = [];
+    let predicciones = [];
+    let rankingsByGroup = new Map();
+    let expandedFinishedGroups = new Set();
+    let selectedParticipant = null;
+
+    const statusEl = document.getElementById("status");
+    const errorBox = document.getElementById("errorBox");
+    const groupRankingsEl = document.getElementById("groupRankings");
+    const todayPendingMatchesEl = document.getElementById("todayPendingMatches");
+    const todayPendingSection = document.getElementById("todayPendingSection");
+    const hiddenGeneralSection = document.getElementById("hiddenGeneralSection");
+    const hiddenGeneralRankingEl = document.getElementById("hiddenGeneralRanking");
+    const rankingsSection = document.getElementById("rankingsSection");
+    const detailSection = document.getElementById("detailSection");
+    const matchSection = document.getElementById("matchSection");
+    const matchDetailEl = document.getElementById("matchDetail");
+    const detailEl = document.getElementById("participantDetail");
+    const summaryCards = document.getElementById("summaryCards");
+    const searchInput = document.getElementById("searchInput");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if ("scrollRestoration" in history) {
+        history.scrollRestoration = "manual";
+      }
+
+      reloadBtn.addEventListener("click", loadData);
+      searchInput.addEventListener("input", renderGroupRankings);
+      window.addEventListener("hashchange", () => renderRouteFromHash({ allowGroupScroll: true }));
+      loadData();
+    });
+
+    async function loadData() {
+      try {
+        setLoading(true);
+        clearError();
+
+        const [partidosCsv, prediccionesCsv] = await Promise.all([
+          fetchCsv(GID_PARTIDOS, "Partidos"),
+          fetchCsv(GID_PREDICCIONES, "Predicciones")
+        ]);
+
+        partidos = csvToObjects(partidosCsv)
+          .filter(row => row.id_partido)
+          .map(normalizePartido)
+          .sort(sortByGroupDateAndHour);
+
+        predicciones = csvToObjects(prediccionesCsv)
+          .filter(row => row.id_participante && row.id_partido)
+          .map(normalizePrediccion);
+
+        validateData();
+        rankingsByGroup = calculateRankingsByGroup();
+        selectedParticipant = getParticipantFromHash() || getParticipants()[0] || null;
+
+        renderTodayPendingMatches();
+        renderHiddenGeneralRanking();
+        renderGroupRankings();
+        renderParticipantDetail(selectedParticipant);
+        renderRouteFromHash({ allowGroupScroll: false });
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+        statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
+      } catch (error) {
+        showError(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function buildGvizCsvUrl(gid) {
+      const cacheBuster = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid=${gid}&nocache=${cacheBuster}`;
+    }
+
+    async function fetchCsv(gid, sheetName) {
+      const freshUrl = buildGvizCsvUrl(gid);
+      const response = await fetch(freshUrl);
+
+      if (!response.ok) {
+        throw new Error(`No se pudo cargar la hoja ${sheetName}: ${response.status} ${response.statusText}`);
+      }
+
+      const text = await response.text();
+
+      if (text.trim().startsWith("<")) {
+        throw new Error(`Google devolvió HTML en lugar de CSV para la hoja ${sheetName}. Revisa permisos o el gid de la hoja.`);
+      }
+
+      return text;
+    }
+
+    function csvToObjects(csvText) {
+      const rows = parseCSV(csvText);
+      if (!rows.length) return [];
+
+      const headers = rows[0].map(header => normalizeHeader(header));
+
+      return rows.slice(1).map(row => {
+        const obj = {};
+        headers.forEach((header, index) => {
+          obj[header] = cleanValue(row[index] ?? "");
+        });
+        return obj;
+      });
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let currentRow = [];
+      let currentValue = "";
+      let insideQuotes = false;
+
+      text = text.replace(/^\uFEFF/, "");
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const nextChar = text[i + 1];
+
+        if (char === '"') {
+          if (insideQuotes && nextChar === '"') {
+            currentValue += '"';
+            i++;
+          } else {
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === "," && !insideQuotes) {
+          currentRow.push(currentValue);
+          currentValue = "";
+        } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+          if (char === "\r" && nextChar === "\n") i++;
+          currentRow.push(currentValue);
+          rows.push(currentRow);
+          currentRow = [];
+          currentValue = "";
+        } else {
+          currentValue += char;
+        }
+      }
+
+      if (currentValue !== "" || currentRow.length) {
+        currentRow.push(currentValue);
+        rows.push(currentRow);
+      }
+
+      return rows.filter(row => row.some(cell => cleanValue(cell) !== ""));
+    }
+
+    function normalizeHeader(value) {
+      return cleanValue(value)
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "_");
+    }
+
+    function cleanValue(value) {
+      return String(value ?? "").trim().replace(/\s+/g, " ");
+    }
+
+    function normalizeIdPartido(value) {
+      const clean = cleanValue(value);
+      if (/^\d+\.0+$/.test(clean)) return String(parseInt(clean, 10));
+      return clean;
+    }
+
+    function normalizeComparable(value) {
+      return cleanValue(value).toLowerCase();
+    }
+
+    function normalizeGroup(value) {
+      return cleanValue(value).replace(/^grupo\s+/i, "").toUpperCase();
+    }
+
+    function normalizePartido(row) {
+      return {
+        id_partido: normalizeIdPartido(row.id_partido),
+        grupo: normalizeGroup(row.grupo),
+        fecha: cleanValue(row.fecha),
+        hora: cleanValue(row.hora),
+        local: cleanValue(row.local),
+        visitante: cleanValue(row.visitante),
+        resultado_real: cleanValue(row.resultado_real)
+      };
+    }
+
+    function normalizePrediccion(row) {
+      return {
+        id_participante: cleanValue(row.id_participante),
+        id_partido: normalizeIdPartido(row.id_partido),
+        prediccion: cleanValue(row.prediccion)
+      };
+    }
+
+    function validateData() {
+      const requiredPartidos = ["id_partido", "grupo", "fecha", "hora", "local", "visitante", "resultado_real"];
+      const requiredPredicciones = ["id_participante", "id_partido", "prediccion"];
+
+      const sampleRawPartido = csvToObjectsCacheSample(partidos, requiredPartidos);
+      const sampleRawPrediccion = csvToObjectsCacheSample(predicciones, requiredPredicciones);
+
+      if (!sampleRawPartido.ok || !sampleRawPrediccion.ok) {
+        throw new Error(
+          `Faltan columnas o datos en el CSV.\n` +
+          `Partidos: ${sampleRawPartido.missing.join(", ") || "OK"}\n` +
+          `Predicciones: ${sampleRawPrediccion.missing.join(", ") || "OK"}`
+        );
+      }
+    }
+
+    function csvToObjectsCacheSample(data, requiredKeys) {
+      const sample = data[0] || {};
+      const missing = requiredKeys.filter(key => !(key in sample));
+      return { ok: missing.length === 0 && data.length > 0, missing: data.length > 0 ? missing : ["sin datos"] };
+    }
+
+    function getParticipants() {
+      return [...new Set(predicciones.map(p => p.id_participante))].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function getGroups() {
+      return [...new Set(partidos.map(p => p.grupo).filter(Boolean))].sort(sortGroups);
+    }
+
+    function sortGroups(a, b) {
+      return a.localeCompare(b, "es", { numeric: true });
+    }
+
+    function calculateRankingsByGroup() {
+      const result = new Map();
+      const participants = getParticipants();
+      const groups = getGroups();
+      const predMap = buildPredictionMap();
+
+      groups.forEach(group => {
+        const groupMatches = partidos.filter(partido => partido.grupo === group);
+
+        const ranking = participants.map(nombre => {
+          let puntos = 0;
+          let aciertos = 0;
+          let errores = 0;
+          let pendientes = 0;
+
+          groupMatches.forEach(partido => {
+            const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+            const resultReal = partido.resultado_real;
+
+            if (!resultReal) {
+              pendientes++;
+              return;
+            }
+
+            if (prediction && normalizeComparable(prediction.prediccion) === normalizeComparable(resultReal)) {
+              puntos++;
+              aciertos++;
+            } else {
+              errores++;
+            }
+          });
+
+          return {
+            nombre,
+            grupo: group,
+            puntos,
+            aciertos,
+            errores,
+            pendientes,
+            total: groupMatches.length
+          };
+        }).sort(sortRankingRows);
+
+        result.set(group, ranking);
+      });
+
+      return result;
+    }
+
+    function sortRankingRows(a, b) {
+      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+      if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
+      if (a.errores !== b.errores) return a.errores - b.errores;
+      return a.nombre.localeCompare(b.nombre, "es");
+    }
+
+    function buildPredictionMap() {
+      const map = new Map();
+      predicciones.forEach(pred => {
+        map.set(`${pred.id_participante}::${pred.id_partido}`, pred);
+      });
+      return map;
+    }
+
+
+    function shouldShowHiddenGeneralRanking() {
+      return normalizeComparable((window.location.hash || "").replace(/^#/, "")) === normalizeComparable("TablaOculta");
+    }
+
+    function calculateGeneralRanking() {
+      return getParticipants().map(nombre => calculateParticipantGlobalStats(nombre))
+        .sort(sortRankingRows);
+    }
+
+    function renderHiddenGeneralRanking() {
+      const ranking = calculateGeneralRanking();
+
+      if (!hiddenGeneralRankingEl) return;
+
+      if (!ranking.length) {
+        hiddenGeneralRankingEl.innerHTML = `<div class="detail-empty">No hay participantes para mostrar.</div>`;
+        return;
+      }
+
+      const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+      hiddenGeneralRankingEl.innerHTML = ranking.map(item => renderGeneralRankRow(item, getPositionByPoints(item, ranking), maxPoints)).join("");
+    }
+
+    function renderGeneralRankRow(item, position, maxPoints) {
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+
+      return `
+        <article class="rank-row">
+          <div class="rank-pos">${position}</div>
+          <div class="participant-name" title="${escapeHTML(item.nombre)}">${escapeHTML(item.nombre)}</div>
+          <div class="bar-track" aria-label="${item.puntos} puntos generales">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
+
+    function renderTodayPendingMatches() {
+      const today = getTodayISODate();
+      const pendingToday = partidos
+        .filter(partido => normalizeDate(partido.fecha) === today && !partido.resultado_real)
+        .sort(sortByDateAndHour);
+
+      if (!pendingToday.length) {
+        todayPendingMatchesEl.innerHTML = `<div class="detail-empty">No quedan partidos pendientes para hoy.</div>`;
+        return;
+      }
+
+      todayPendingMatchesEl.innerHTML = pendingToday.map(partido => `
+        <article class="today-match-card clickable-match-row" onclick="selectMatch('${escapeForAttribute(partido.id_partido)}')" title="Ver predicciones de este partido">
+          <div class="today-match-time">${escapeHTML(partido.hora || "--:--")}</div>
+          <div class="today-match-info">
+            <div class="today-match-title">
+              ${teamWithFlag(partido.local)}
+              <span>vs</span>
+              ${teamWithFlag(partido.visitante)}
+            </div>
+            <div class="today-match-meta">Grupo ${escapeHTML(partido.grupo)} · ${formatDate(partido.fecha)}</div>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function getTodayISODate() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function renderGroupRankings() {
+      const query = normalizeComparable(searchInput.value);
+      const isSearching = Boolean(query);
+      const groups = getGroups();
+
+      if (!groups.length) {
+        groupRankingsEl.innerHTML = `<div class="detail-empty">No hay grupos para mostrar.</div>`;
+        return;
+      }
+
+      groupRankingsEl.innerHTML = groups.map(group => {
+        const normalizedGroup = normalizeGroup(group);
+        const groupRanking = rankingsByGroup.get(group) || [];
+        const filteredRanking = groupRanking.filter(item => normalizeComparable(item.nombre).includes(query));
+        const maxPoints = Math.max(...groupRanking.map(item => item.puntos), 1);
+        const teams = getTeamsForGroup(group);
+        const finished = isGroupFinished(group);
+        const expanded = expandedFinishedGroups.has(normalizedGroup);
+        const showWinnersOnly = finished && !expanded && !isSearching;
+        const winners = getGroupWinners(groupRanking);
+        const rowsToRender = showWinnersOnly ? winners : filteredRanking;
+        const cardClass = `group-card ${finished ? "finished" : ""}`;
+        const headClass = `group-card-head ${finished ? "clickable-group-head" : ""}`;
+        const headAction = finished ? `onclick="toggleGroupTable('${escapeForAttribute(group)}')" title="Ver u ocultar tabla completa del Grupo ${escapeHTML(group)}"` : "";
+        const statusText = getGroupStatusText(finished, expanded, isSearching, winners.length);
+        const toggleLabel = expanded ? "Ocultar tabla completa" : "Ver tabla completa";
+
+        return `
+          <article class="${cardClass}" id="${getGroupCardAnchorId(group)}">
+            <div class="${headClass}" ${headAction}>
+              <div class="group-title"><span class="group-badge">${escapeHTML(group)}</span> Grupo ${escapeHTML(group)}</div>
+              <div class="group-teams group-team-list">${teams.map(teamWithFlag).join("")}</div>
+            </div>
+
+            ${finished ? `
+              <div class="group-status-line">
+                <span class="pill yellow">Finalizado</span>
+                <span>${statusText}</span>
+                ${!isSearching ? `<button class="group-toggle-btn" type="button" onclick="event.stopPropagation(); toggleGroupTable('${escapeForAttribute(group)}')">${toggleLabel}</button>` : ""}
+              </div>
+            ` : `
+              <div class="group-status-line">
+                <span class="pill blue">En juego</span>
+                <span>Mostrando tabla completa del grupo.</span>
+              </div>
+            `}
+
+            <div class="ranking-list">
+              ${rowsToRender.length ? rowsToRender.map((item) => showWinnersOnly ? renderWinnerRankRow(item, groupRanking, maxPoints, group) : renderRankRow(item, groupRanking, maxPoints, group)).join("") : `<div class="detail-empty">No se encontró ningún participante.</div>`}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function isGroupFinished(group) {
+      const groupMatches = partidos.filter(partido => partido.grupo === group);
+      return groupMatches.length > 0 && groupMatches.every(partido => Boolean(partido.resultado_real));
+    }
+
+    function getGroupWinners(groupRanking) {
+      if (!groupRanking.length) return [];
+      const maxPoints = Math.max(...groupRanking.map(item => item.puntos));
+      return groupRanking.filter(item => item.puntos === maxPoints);
+    }
+
+    function getGroupPrizePool() {
+      return getParticipants().length * COSTO_POR_PARTICIPANTE_POR_GRUPO;
+    }
+
+    function getGroupPrizeAmount(group) {
+      if (!isGroupFinished(group)) return 0;
+
+      const ranking = rankingsByGroup.get(group) || [];
+      const winners = getGroupWinners(ranking);
+      if (!winners.length) return 0;
+
+      return getGroupPrizePool() / winners.length;
+    }
+
+    function getParticipantPrizeInGroup(nombre, group) {
+      if (!isGroupFinished(group)) return 0;
+
+      const ranking = rankingsByGroup.get(group) || [];
+      const winners = getGroupWinners(ranking);
+      const isWinner = winners.some(item => item.nombre === nombre);
+
+      return isWinner ? getGroupPrizeAmount(group) : 0;
+    }
+
+    function calculateParticipantPrizeStats(nombre) {
+      const details = getGroups()
+        .map(group => ({ group, amount: getParticipantPrizeInGroup(nombre, group) }))
+        .filter(item => item.amount > 0);
+
+      const total = details.reduce((sum, item) => sum + item.amount, 0);
+      return { total, details };
+    }
+
+    function formatMoney(amount) {
+      const value = Number(amount) || 0;
+      const isInteger = Math.abs(value - Math.round(value)) < 0.001;
+
+      return value.toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN",
+        minimumFractionDigits: isInteger ? 0 : 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function renderParticipantNameWithPrize(nombre, prizeAmount = 0) {
+      const hasPrize = prizeAmount > 0;
+
+      return `
+        <div class="participant-name ${hasPrize ? "with-prize" : ""}" title="${escapeHTML(nombre)}">
+          <span class="name-text">${escapeHTML(nombre)}</span>
+          ${hasPrize ? `<span class="money-tag">${formatMoney(prizeAmount)}</span>` : ""}
+        </div>
+      `;
+    }
+
+    function getGroupStatusText(finished, expanded, isSearching, winnersCount) {
+      if (!finished) return "Tabla completa del grupo (Grupo aún en juego).";
+      if (isSearching) return "Búsqueda activa: mostrando coincidencias dentro de la tabla completa.";
+      if (expanded) return "Tabla completa final del grupo.";
+      return winnersCount === 1 ? "Mostrando ganador del grupo." : `Mostrando ganadores del grupo.`;
+    }
+
+    function toggleGroupTable(group) {
+      const normalizedGroup = normalizeGroup(group);
+      if (!normalizedGroup) return;
+
+      if (expandedFinishedGroups.has(normalizedGroup)) {
+        expandedFinishedGroups.delete(normalizedGroup);
+      } else {
+        expandedFinishedGroups.add(normalizedGroup);
+      }
+
+      renderGroupRankings();
+      const groupCard = document.getElementById(getGroupCardAnchorId(normalizedGroup));
+      if (groupCard) {
+        groupCard.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    window.toggleGroupTable = toggleGroupTable;
+
+    function getGroupCardAnchorId(group) {
+      const cleanGroup = normalizeGroup(group) || "sin-grupo";
+      return `ranking-group-${cleanGroup.replace(/[^A-Z0-9_-]/g, "")}`;
+    }
+
+    function renderWinnerRankRow(item, groupRanking, maxPoints, group) {
+      const position = getPositionByPoints(item, groupRanking);
+      const prizeAmount = getParticipantPrizeInGroup(item.nombre, group);
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+      const isActive = item.nombre === selectedParticipant ? "active" : "";
+
+      return `
+        <article class="rank-row winner-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
+          <div class="rank-pos" title="Puesto ${position}">🏆</div>
+          ${renderParticipantNameWithPrize(item.nombre, prizeAmount)}
+          <div class="bar-track" aria-label="${item.puntos} puntos">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill yellow">Ganador</span>
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderRankRow(item, groupRanking, maxPoints, group) {
+      const position = getPositionByPoints(item, groupRanking);
+      const prizeAmount = getParticipantPrizeInGroup(item.nombre, group);
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+      const isActive = item.nombre === selectedParticipant ? "active" : "";
+
+      return `
+        <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}', '${escapeForAttribute(group)}')">
+          <div class="rank-pos">${position}</div>
+          ${renderParticipantNameWithPrize(item.nombre, prizeAmount)}
+          <div class="bar-track" aria-label="${item.puntos} puntos">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+          </div>
+        </article>
+      `;
+    }
+
+    function selectParticipant(nombre, group = "") {
+      selectedParticipant = nombre;
+      const normalizedGroup = normalizeGroup(group);
+
+      // Guardamos solo el participante en la URL.
+      // El grupo se usa únicamente para hacer scroll en este click,
+      // así al recargar con F5 la página vuelve a iniciar arriba.
+      history.pushState(null, "", `#participante=${encodeURIComponent(nombre)}`);
+      hiddenGeneralSection.hidden = true;
+
+      renderGroupRankings();
+      renderParticipantDetail(nombre);
+      scrollToParticipantGroup(normalizedGroup);
+    }
+
+    window.selectParticipant = selectParticipant;
+
+    function selectMatch(idPartido) {
+      const normalizedId = normalizeIdPartido(idPartido);
+      window.location.hash = `partido=${encodeURIComponent(normalizedId)}`;
+      renderMatchDetail(normalizedId);
+    }
+
+    window.selectMatch = selectMatch;
+
+    function goBackToParticipant() {
+      if (selectedParticipant) {
+        window.location.hash = `participante=${encodeURIComponent(selectedParticipant)}`;
+      } else {
+        window.location.hash = "";
+        renderRouteFromHash({ allowGroupScroll: false });
+      }
+    }
+
+    window.goBackToParticipant = goBackToParticipant;
+
+    function renderRouteFromHash(options = {}) {
+      const { allowGroupScroll = false } = options;
+      const idPartido = getMatchFromHash();
+
+      if (idPartido) {
+        renderMatchDetail(idPartido);
+        return;
+      }
+
+      const showHiddenGeneral = shouldShowHiddenGeneralRanking();
+      const participantFromHash = getParticipantFromHash();
+      const groupFromHash = getGroupFromHash();
+      if (participantFromHash) {
+        selectedParticipant = participantFromHash;
+      }
+
+      showMainView();
+      renderHiddenGeneralRanking();
+      hiddenGeneralSection.hidden = !showHiddenGeneral;
+      renderGroupRankings();
+      renderParticipantDetail(selectedParticipant);
+      scrollToParticipantGroup(groupFromHash);
+    }
+
+    function showMainView() {
+      todayPendingSection.hidden = false;
+      rankingsSection.hidden = false;
+      detailSection.hidden = false;
+      matchSection.hidden = true;
+    }
+
+    function showMatchView() {
+      todayPendingSection.hidden = true;
+      hiddenGeneralSection.hidden = true;
+      rankingsSection.hidden = true;
+      detailSection.hidden = true;
+      matchSection.hidden = false;
+    }
+
+    function renderMatchDetail(idPartido) {
+      const normalizedId = normalizeIdPartido(idPartido);
+      const partido = partidos.find(item => normalizeIdPartido(item.id_partido) === normalizedId);
+
+      if (!partido) {
+        showMatchView();
+        matchDetailEl.innerHTML = `<div class="detail-empty">No se encontró el partido seleccionado.</div>`;
+        return;
+      }
+
+      const predMap = buildPredictionMap();
+      const rows = getParticipants().map(nombre => {
+        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+        const prediccion = prediction?.prediccion || "Sin predicción";
+        const status = getMatchStatus(prediccion, partido.resultado_real);
+        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
+        const tipo = getPredictionType(partido, prediccion);
+
+        return { nombre, prediccion, status, puntos, tipo };
+      }).sort(sortMatchPredictionRows);
+
+      const totals = rows.reduce((acc, row) => {
+        acc.total++;
+        if (row.tipo === "local") acc.local++;
+        else if (row.tipo === "empate") acc.empate++;
+        else if (row.tipo === "visitante") acc.visitante++;
+        else acc.sinPrediccion++;
+
+        if (row.status === "ok") acc.aciertos++;
+        else if (row.status === "fail") acc.errores++;
+        else acc.pendientes++;
+
+        return acc;
+      }, { total: 0, local: 0, empate: 0, visitante: 0, sinPrediccion: 0, aciertos: 0, errores: 0, pendientes: 0 });
+
+      const resultado = partido.resultado_real || "Pendiente";
+
+      showMatchView();
+      matchDetailEl.innerHTML = `
+        <div class="match-detail-card">
+          <div class="match-detail-title">
+            ${teamWithFlag(partido.local)}
+            <span>vs</span>
+            ${teamWithFlag(partido.visitante)}
+          </div>
+          <div class="match-meta">Grupo ${escapeHTML(partido.grupo)} · ${formatDate(partido.fecha)} · ${escapeHTML(partido.hora)}</div>
+          <div class="match-summary-pills">
+            <span class="pill blue">Resultado: ${teamWithFlag(resultado)}</span>
+            <span class="pill green">${totals.aciertos} aciertos</span>
+            <span class="pill red">${totals.errores} errores</span>
+            <span class="pill gray">${totals.pendientes} pendientes</span>
+          </div>
+          <div class="match-summary-pills">
+            <span class="pill blue">${teamWithFlag(partido.local)}: ${totals.local}</span>
+            <span class="pill yellow">Empate: ${totals.empate}</span>
+            <span class="pill blue">${teamWithFlag(partido.visitante)}: ${totals.visitante}</span>
+            ${totals.sinPrediccion ? `<span class="pill gray">Sin predicción: ${totals.sinPrediccion}</span>` : ""}
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Participante</th>
+                <th>Predicción</th>
+                <th>Resultado</th>
+                <th>Puntos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `
+                <tr class="${row.status}">
+                  <td><strong>${escapeHTML(row.nombre)}</strong></td>
+                  <td>${renderPredictionChoice(partido, row.prediccion)}</td>
+                  <td>${renderStatusPill(row.status)}</td>
+                  <td><strong>${row.puntos}</strong></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      matchSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function sortMatchPredictionRows(a, b) {
+      const order = { local: 1, empate: 2, visitante: 3, none: 4 };
+      return (order[a.tipo] || 5) - (order[b.tipo] || 5) || a.nombre.localeCompare(b.nombre, "es");
+    }
+
+    function renderPredictionChoice(partido, prediccion) {
+      const tipo = getPredictionType(partido, prediccion);
+      let label = prediccion;
+
+      if (tipo === "local") label = partido.local;
+      if (tipo === "visitante") label = partido.visitante;
+
+      return `<span class="prediction-choice">${teamWithFlag(label)}</span>`;
+    }
+
+    function renderStatusPill(status) {
+      if (status === "ok") return `<span class="pill green">Acertó</span>`;
+      if (status === "fail") return `<span class="pill red">Falló</span>`;
+      return `<span class="pill gray">Pendiente</span>`;
+    }
+
+
+    function renderParticipantDetail(nombre) {
+      if (!nombre) {
+        detailEl.className = "detail-empty";
+        detailEl.innerHTML = "Selecciona un participante del ranking.";
+        return;
+      }
+
+      const predMap = buildPredictionMap();
+      const groups = getGroups();
+      const globalStats = calculateParticipantGlobalStats(nombre);
+      const prizeStats = calculateParticipantPrizeStats(nombre);
+
+      detailEl.className = "";
+      detailEl.innerHTML = `
+        <div class="participant-header">
+          <div>
+            <h3 class="participant-title">
+              <span>${escapeHTML(nombre)}</span>
+              <span class="money-tag big">Ganado: ${formatMoney(prizeStats.total)}</span>
+            </h3>
+            <div>
+              <span class="pill blue">Resumen total</span>
+              <span class="pill green">${globalStats.aciertos} aciertos</span>
+              <span class="pill red">${globalStats.errores} errores</span>
+              <span class="pill gray">${globalStats.pendientes} pendientes</span>
+            </div>
+          </div>
+          <div class="big-score">${globalStats.puntos} pts</div>
+        </div>
+
+        ${groups.map(group => renderParticipantGroup(nombre, group, predMap)).join("")}
+      `;
+    }
+
+    function renderParticipantGroup(nombre, group, predMap) {
+      const groupMatches = partidos.filter(partido => partido.grupo === group).sort(sortByDateAndHour);
+      const rows = groupMatches.map(partido => {
+        const prediction = predMap.get(`${nombre}::${partido.id_partido}`);
+        const prediccion = prediction?.prediccion || "Sin predicción";
+        const resultado = partido.resultado_real || "Pendiente";
+        const status = getMatchStatus(prediccion, partido.resultado_real);
+        const puntos = status === "ok" ? "1" : status === "fail" ? "0" : "-";
+        return { partido, prediccion, resultado, status, puntos };
+      });
+
+      const stats = calculateGroupStatsForParticipant(nombre, group);
+      const position = getPositionInGroup(nombre, group);
+      const groupPrizeAmount = getParticipantPrizeInGroup(nombre, group);
+
+      return `
+        <div class="detail-group" id="${getParticipantGroupAnchorId(group)}">
+          <div class="detail-group-head">
+            <div>
+              <strong>Grupo ${escapeHTML(group)}</strong>
+              <span class="pill yellow">Puesto ${position}</span>
+            </div>
+            <div>
+              <span class="pill blue">${stats.puntos} pts</span>
+              <span class="pill green">${stats.aciertos} aciertos</span>
+              <span class="pill red">${stats.errores} errores</span>
+              <span class="pill gray">${stats.pendientes} pendientes</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Partido y predicción</th>
+                  <th>Resultado real</th>
+                  <th>Puntos</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(row => `
+                  <tr class="${row.status} clickable-match-row" onclick="selectMatch('${escapeForAttribute(row.partido.id_partido)}')" title="Ver predicciones de este partido">
+                    <td>
+                      ${renderPredictionMatch(row.partido, row.prediccion)}
+                      <div class="match-meta">${formatDate(row.partido.fecha)} · ${escapeHTML(row.partido.hora)}</div>
+                    </td>
+                    <td>${teamWithFlag(row.resultado)}</td>
+                    <td><strong>${row.puntos}</strong></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function calculateParticipantGlobalStats(nombre) {
+      const groups = getGroups();
+      return groups.reduce((acc, group) => {
+        const stats = calculateGroupStatsForParticipant(nombre, group);
+        acc.puntos += stats.puntos;
+        acc.aciertos += stats.aciertos;
+        acc.errores += stats.errores;
+        acc.pendientes += stats.pendientes;
+        return acc;
+      }, { nombre, puntos: 0, aciertos: 0, errores: 0, pendientes: 0 });
+    }
+
+    function calculateGroupStatsForParticipant(nombre, group) {
+      const ranking = rankingsByGroup.get(group) || [];
+      return ranking.find(item => item.nombre === nombre) || { puntos: 0, aciertos: 0, errores: 0, pendientes: 0 };
+    }
+
+    function getPositionInGroup(nombre, group) {
+      const ranking = rankingsByGroup.get(group) || [];
+      return getPositionInRanking(nombre, ranking);
+    }
+
+    function getPositionInRanking(nombre, ranking) {
+      const item = ranking.find(row => row.nombre === nombre);
+      if (!item) return "-";
+      return getPositionByPoints(item, ranking);
+    }
+
+    function getPositionByPoints(item, ranking) {
+      const orderedPoints = [...new Set(ranking.map(row => row.puntos))]
+        .sort((a, b) => b - a);
+      const index = orderedPoints.indexOf(item.puntos);
+      return index >= 0 ? index + 1 : "-";
+    }
+
+    function getParticipantGroupAnchorId(group) {
+      const cleanGroup = normalizeGroup(group) || "sin-grupo";
+      return `participant-group-${cleanGroup.replace(/[^A-Z0-9_-]/g, "")}`;
+    }
+
+    function scrollToParticipantGroup(group) {
+      const normalizedGroup = normalizeGroup(group);
+
+      // Si no viene un grupo explícito en el hash, no hacemos scroll automático.
+      // Así, al entrar por primera vez a la página, se queda arriba.
+      if (!normalizedGroup) return;
+
+      const groupEl = document.getElementById(getParticipantGroupAnchorId(normalizedGroup));
+      if (groupEl) {
+        groupEl.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function renderPredictionMatch(partido, prediccion) {
+      const predictionType = getPredictionType(partido, prediccion);
+      const localChecked = ["local", "empate"].includes(predictionType) ? "checked" : "";
+      const visitanteChecked = ["visitante", "empate"].includes(predictionType) ? "checked" : "";
+      const predictionLabel = prediccion === "Sin predicción" ? "Sin predicción" : `Predicción: ${prediccion}`;
+
+      return `
+        <div class="prediction-match" title="${escapeForAttribute(predictionLabel)}">
+          <div class="prediction-side local">
+            ${teamWithFlag(partido.local)}
+            <span class="prediction-box ${localChecked}" aria-label="Predicción local"></span>
+          </div>
+          <div class="prediction-center">
+            <span>VS</span>
+          </div>
+          <div class="prediction-side visitante">
+            <span class="prediction-box ${visitanteChecked}" aria-label="Predicción visitante"></span>
+            ${teamWithFlag(partido.visitante)}
+          </div>
+        </div>
+        <div class="prediction-help">${escapeHTML(predictionLabel)}</div>
+      `;
+    }
+
+    function getPredictionType(partido, prediccion) {
+      const prediction = normalizeComparable(prediccion);
+      if (!prediction || prediction === normalizeComparable("Sin predicción")) return "none";
+      if (prediction === normalizeComparable("Empate")) return "empate";
+      if (prediction === normalizeComparable(partido.local)) return "local";
+      if (prediction === normalizeComparable(partido.visitante)) return "visitante";
+      return "none";
+    }
+
+    function getTeamsForGroup(group) {
+      const teams = new Set();
+      partidos.filter(p => p.grupo === group).forEach(p => {
+        if (p.local) teams.add(p.local);
+        if (p.visitante) teams.add(p.visitante);
+      });
+      return [...teams].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function teamWithFlag(teamName) {
+      const cleanName = cleanValue(teamName);
+
+      if (!cleanName) return "";
+      if (["Empate", "Pendiente", "Sin predicción"].includes(cleanName)) {
+        return `<span>${escapeHTML(cleanName)}</span>`;
+      }
+
+      const code = FLAGS[cleanName];
+      if (!code) {
+        return `<span>${escapeHTML(cleanName)}</span>`;
+      }
+
+      return `
+        <span class="team-name" title="${escapeHTML(cleanName)}">
+          <img class="team-flag" src="https://flagcdn.com/24x18/${code}.png" srcset="https://flagcdn.com/48x36/${code}.png 2x" alt="Bandera de ${escapeHTML(cleanName)}" loading="lazy" />
+          <span>${escapeHTML(cleanName)}</span>
+        </span>
+      `;
+    }
+
+    function getMatchStatus(prediccion, resultadoReal) {
+      if (!resultadoReal) return "pending";
+      return normalizeComparable(prediccion) === normalizeComparable(resultadoReal) ? "ok" : "fail";
+    }
+
+    function sortByGroupDateAndHour(a, b) {
+      return sortGroups(a.grupo, b.grupo) || sortByDateAndHour(a, b);
+    }
+
+    function sortByDateAndHour(a, b) {
+      const dateA = parseDateTime(a.fecha, a.hora);
+      const dateB = parseDateTime(b.fecha, b.hora);
+      return dateA - dateB || Number(a.id_partido) - Number(b.id_partido);
+    }
+
+    function parseDateTime(fecha, hora) {
+      const normalizedDate = normalizeDate(fecha);
+      return new Date(`${normalizedDate}T${hora || "00:00"}:00`);
+    }
+
+    function normalizeDate(fecha) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+      const parts = fecha.split(/[\/\-]/).map(part => part.padStart(2, "0"));
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        if (year.length === 4) return `${year}-${month}-${day}`;
+      }
+      return fecha;
+    }
+
+    function formatDate(fecha) {
+      const normalized = normalizeDate(fecha);
+      const date = new Date(`${normalized}T00:00:00`);
+      if (Number.isNaN(date.getTime())) return fecha;
+      return date.toLocaleDateString("es-MX", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+      });
+    }
+
+    function getParticipantFromHash() {
+      const hash = decodeURIComponent(window.location.hash || "");
+      const match = hash.match(/participante=([^&]+)/);
+      return match ? match[1] : null;
+    }
+
+    function getMatchFromHash() {
+      const hash = decodeURIComponent(window.location.hash || "");
+      const match = hash.match(/partido=([^&]+)/);
+      return match ? normalizeIdPartido(match[1]) : null;
+    }
+
+    function getGroupFromHash() {
+      const hash = decodeURIComponent(window.location.hash || "");
+      const match = hash.match(/grupo=([^&]+)/);
+      return match ? normalizeGroup(match[1]) : "";
+    }
+
+    function setLoading(isLoading) {
+      reloadBtn.disabled = isLoading;
+      reloadBtn.textContent = isLoading ? "Cargando..." : "Actualizar datos";
+      if (isLoading) statusEl.textContent = "Cargando datos...";
+    }
+
+    function showError(error) {
+      console.error(error);
+      statusEl.textContent = "No se pudieron cargar los datos.";
+      errorBox.hidden = false;
+      errorBox.textContent = `${error.message}\n\nRevisa que las hojas estén publicadas como CSV, que el Google Sheet sea público como lector y que los nombres de columnas sean correctos.`;
+    }
+
+    function clearError() {
+      errorBox.hidden = true;
+      errorBox.textContent = "";
+    }
+
+    function escapeHTML(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeForAttribute(value) {
+      return String(value ?? "")
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'")
+        .replace(/\"/g, "&quot;");
+    }
+  </script>
+</body>
+</html>
