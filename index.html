@@ -662,6 +662,29 @@
 
     .prediction-box.checked::before { content: "×"; }
 
+    .prediction-goal {
+      min-width: 26px;
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: var(--primary-dark);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.82rem;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .prediction-goal.empty {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+      color: #94a3b8;
+    }
+
     .prediction-help {
       margin-top: 5px;
       color: var(--muted);
@@ -809,6 +832,13 @@
         height: 19px;
         border-radius: 5px;
         font-size: 14px;
+      }
+
+      .prediction-goal {
+        min-width: 22px;
+        height: 21px;
+        padding: 0 6px;
+        font-size: 0.74rem;
       }
 
       .prediction-side { gap: 4px; }
@@ -1663,14 +1693,14 @@
       const localChecked = predictionType === "local" ? "checked" : "";
       const visitanteChecked = predictionType === "visitante" ? "checked" : "";
       const predictionLabel = prediccion === "Sin predicción" ? "Sin predicción" : `Predicción: ${prediccion}`;
-      const scoreLabel = usesScoreBonus(partido.ronda)
-        ? `<div class="prediction-help">Marcador predicho: ${formatScoreDisplay(prediction?.golesLocal, prediction?.golesVisitante)}</div>`
-        : "";
+      const localScore = renderPredictedGoalBadge(partido, prediction, "local");
+      const visitanteScore = renderPredictedGoalBadge(partido, prediction, "visitante");
 
       return `
         <div class="prediction-match" title="${escapeForAttribute(predictionLabel)}">
           <div class="prediction-side local">
             ${teamWithFlag(partido.local)}
+            ${localScore}
             <span class="prediction-box ${localChecked}" aria-label="Predicción local"></span>
           </div>
 
@@ -1680,12 +1710,27 @@
 
           <div class="prediction-side visitante">
             <span class="prediction-box ${visitanteChecked}" aria-label="Predicción visitante"></span>
+            ${visitanteScore}
             ${teamWithFlag(partido.visitante)}
           </div>
         </div>
         <div class="prediction-help">${escapeHTML(predictionLabel)}</div>
-        ${scoreLabel}
       `;
+    }
+
+    function renderPredictedGoalBadge(partido, prediction, side) {
+      if (!usesScoreBonus(partido.ronda)) return "";
+
+      const teamName = side === "local" ? partido.local : partido.visitante;
+      const rawValue = side === "local" ? prediction?.golesLocal : prediction?.golesVisitante;
+      const value = normalizeGoalValue(rawValue);
+      const displayValue = value === "" ? "-" : escapeHTML(value);
+      const emptyClass = value === "" ? "empty" : "";
+      const label = value === ""
+        ? `Sin goles predichos para ${teamName}`
+        : `${teamName}: ${value} goles predichos`;
+
+      return `<span class="prediction-goal ${emptyClass}" title="${escapeForAttribute(label)}" aria-label="${escapeForAttribute(label)}">${displayValue}</span>`;
     }
 
     function getPredictionType(partido, prediccion) {
@@ -1796,7 +1841,7 @@
 
           <div class="match-summary-pills">
             <span class="pill blue">Ganador: ${teamWithFlag(partido.ganador || "Pendiente")}</span>
-            ${scoreRound ? `<span class="pill blue">Marcador real: ${formatScoreDisplay(partido.golesLocal, partido.golesVisitante)}</span>` : ""}
+            ${scoreRound && partido.ganador ? `<span class="pill blue">Marcador real: ${formatScoreDisplay(partido.golesLocal, partido.golesVisitante)}</span>` : ""}
             <span class="pill green">${totals.aciertos} aciertos</span>
             <span class="pill red">${totals.errores} errores</span>
             <span class="pill gray">${totals.pendientes} pendientes</span>
@@ -1815,8 +1860,7 @@
             <thead>
               <tr>
                 <th>Participante</th>
-                <th>Equipo que avanza</th>
-                ${scoreRound ? `<th>Marcador predicho</th>` : ""}
+                <th>Predicción</th>
                 <th>Resultado</th>
                 <th>Puntos</th>
               </tr>
@@ -1825,8 +1869,10 @@
               ${rows.map(row => `
                 <tr class="${row.result.status}">
                   <td><strong>${escapeHTML(row.nombre)}</strong></td>
-                  <td>${teamWithFlag(row.prediccion)}</td>
-                  ${scoreRound ? `<td><strong>${formatScoreDisplay(row.prediction?.golesLocal, row.prediction?.golesVisitante)}</strong></td>` : ""}
+                  <td>
+                    ${renderPredictionMatch(partido, row.prediccion, row.prediction)}
+                    ${renderExactScoreTag(row.result)}
+                  </td>
                   <td>${renderStatusPill(row.result)}</td>
                   <td>
                     <strong>${row.result.displayPoints}</strong>
