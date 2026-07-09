@@ -864,19 +864,20 @@
   <header>
     <div class="header-inner">
       <h1>Ranking Quiniela Mundial 2026</h1>
-      <p class="subtitle">Eliminatorias.</p>
+      <p class="subtitle">Eliminatorias · aciertos por equipo que avanza y marcador exacto en Octavos y rondas finales.</p>
     </div>
   </header>
 
   <main>
     <div class="toolbar">
       <div class="round-nav" id="roundNav">
-        <div class="round-nav-title">Ir a ronda</div>
+        <div class="round-nav-title">Ir a vista</div>
         <button class="round-btn" type="button" data-round="16avos">16avos</button>
         <button class="round-btn" type="button" data-round="Octavos">Octavos</button>
         <button class="round-btn" type="button" data-round="Cuartos">Cuartos</button>
         <button class="round-btn" type="button" data-round="Semifinal">Semifinal</button>
         <button class="round-btn" type="button" data-round="Final">Final</button>
+        <button class="round-btn" type="button" data-view="finalGeneral">General 4tos-Semi-Final</button>
       </div>
 
       <div class="actions">
@@ -901,14 +902,14 @@
     <section id="rankingSection">
       <div class="section-head">
         <div>
-          <h2 id="rankingTitle">Ranking de 16avos</h2>
+          <h2 id="rankingTitle">Ranking</h2>
           <p class="hint" id="rankingHint" hidden></p>
         </div>
       </div>
       <div id="rankingList" class="ranking-list"></div>
     </section>
 
-    <section id="detailSection">
+    <section id="detailSection" hidden>
       <div class="section-head">
         <div>
           <h2 id="detailTitle">Vista individual</h2>
@@ -935,20 +936,16 @@
     const SHEET_PARTIDOS = "Partidos";
     const SHEET_PREDICCIONES = "Predicciones";
 
-    // Premio por participante en cada ronda.
-    // Cambia solo el número de la ronda que necesites ajustar.
     const COSTO_POR_PARTICIPANTE_16AVOS = 50;
     const COSTO_POR_PARTICIPANTE_OCTAVOS = 50;
     const COSTO_POR_PARTICIPANTE_CUARTOS = 50;
     const COSTO_POR_PARTICIPANTE_SEMIFINAL = 50;
     const COSTO_POR_PARTICIPANTE_FINAL = 50;
+    const COSTO_POR_PARTICIPANTE_RONDAS_FINALES = 50;
 
     const ROUND_ORDER = ["16avos", "Octavos", "Cuartos", "Semifinal", "Final"];
-
-    // Rondas donde se captura marcador exacto. Por ahora solo Octavos.
-    // Si después Cuartos, Semifinal o Final también tienen punto extra por marcador,
-    // agrega el nombre de la ronda aquí.
-    const SCORE_BONUS_ROUNDS = ["Octavos"];
+    const FINAL_POOL_ROUNDS = ["Cuartos", "Semifinal", "Final"];
+    const SCORE_BONUS_ROUNDS = ["Octavos", "Cuartos", "Semifinal", "Final"];
 
     const FLAGS = {
       "México": "mx",
@@ -1005,6 +1002,7 @@
     let predicciones = [];
     let selectedParticipant = null;
     let activeRound = "16avos";
+    let activeView = "round";
     let lastMainHash = "";
 
     const statusEl = document.getElementById("status");
@@ -1033,10 +1031,13 @@
       reloadBtn.addEventListener("click", () => loadData());
 
       roundNav.querySelectorAll("[data-round]").forEach(btn => {
-        btn.addEventListener("click", () => {
-          selectRound(btn.dataset.round);
-        });
+        btn.addEventListener("click", () => selectRound(btn.dataset.round));
       });
+
+      const finalGeneralBtn = roundNav.querySelector("[data-view='finalGeneral']");
+      if (finalGeneralBtn) {
+        finalGeneralBtn.addEventListener("click", selectFinalGeneralView);
+      }
 
       window.addEventListener("hashchange", renderRouteFromHash);
       loadData();
@@ -1062,11 +1063,6 @@
           .filter(pred => pred.participante && pred.partidoId);
 
         validateData();
-
-        const roundFromHash = getRoundFromHash();
-        activeRound = roundFromHash && getRoundMatches(roundFromHash).length ? roundFromHash : getCurrentRound();
-        selectedParticipant = getParticipantFromHash() || selectedParticipant || getParticipants()[0] || null;
-
         renderRouteFromHash();
         statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
       } catch (error) {
@@ -1229,7 +1225,6 @@
       }
 
       const first = partidos[0];
-
       const missing = [];
       if (!first.ronda) missing.push("Ronda");
       if (!first.fecha) missing.push("Fecha");
@@ -1240,11 +1235,6 @@
       if (missing.length) {
         throw new Error(`A la hoja "${SHEET_PARTIDOS}" le faltan datos obligatorios: ${missing.join(", ")}.`);
       }
-    }
-
-    function getParticipants() {
-      return [...new Set(predicciones.map(p => p.participante).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "es"));
     }
 
     function getRounds() {
@@ -1258,6 +1248,38 @@
       const safeA = indexA >= 0 ? indexA : 999;
       const safeB = indexB >= 0 ? indexB : 999;
       return safeA - safeB || a.localeCompare(b, "es");
+    }
+
+    function getRoundMatches(round) {
+      return partidos
+        .filter(partido => normalizeComparable(partido.ronda) === normalizeComparable(round))
+        .sort(sortByDateAndHour);
+    }
+
+    function isFinalPoolRound(round) {
+      return FINAL_POOL_ROUNDS.some(item => normalizeComparable(item) === normalizeComparable(round));
+    }
+
+    function getFinalPoolMatches() {
+      return FINAL_POOL_ROUNDS.flatMap(round => getRoundMatches(round)).sort(sortByDateAndHour);
+    }
+
+    function hasAllFinalPoolRounds() {
+      return FINAL_POOL_ROUNDS.every(round => getRoundMatches(round).length > 0);
+    }
+
+    function isFinalPoolFinished() {
+      const matches = getFinalPoolMatches();
+      return hasAllFinalPoolRounds() && matches.length > 0 && matches.every(partido => Boolean(partido.ganador));
+    }
+
+    function getParticipantsForMatches(partidosScope = partidos) {
+      const ids = new Set(partidosScope.map(partido => normalizeId(partido.id)));
+      return [...new Set(predicciones
+        .filter(pred => ids.has(normalizeId(pred.partidoId)))
+        .map(pred => pred.participante)
+        .filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "es"));
     }
 
     function buildPredictionMap() {
@@ -1318,8 +1340,7 @@
       };
     }
 
-    function calculateRanking(partidosScope = partidos) {
-      const participants = getParticipants();
+    function calculateRanking(partidosScope = partidos, participants = getParticipantsForMatches(partidosScope)) {
       const predMap = buildPredictionMap();
 
       return participants.map(nombre => {
@@ -1339,22 +1360,12 @@
           }
 
           puntos += result.puntos;
-
           if (result.winnerHit) aciertos++;
           else errores++;
-
           if (result.scoreHit) marcadoresExactos++;
         });
 
-        return {
-          nombre,
-          puntos,
-          aciertos,
-          errores,
-          pendientes,
-          marcadoresExactos,
-          total: partidosScope.length
-        };
+        return { nombre, puntos, aciertos, errores, pendientes, marcadoresExactos, total: partidosScope.length };
       }).sort(sortRankingRows);
     }
 
@@ -1367,30 +1378,14 @@
     }
 
     function calculateParticipantStats(nombre, partidosScope = partidos) {
-      const ranking = calculateRanking(partidosScope);
-      return ranking.find(row => row.nombre === nombre) || {
-        nombre,
-        puntos: 0,
-        aciertos: 0,
-        errores: 0,
-        pendientes: partidosScope.length,
-        marcadoresExactos: 0,
-        total: partidosScope.length
-      };
+      const ranking = calculateRanking(partidosScope, [nombre]);
+      return ranking[0] || { nombre, puntos: 0, aciertos: 0, errores: 0, pendientes: partidosScope.length, marcadoresExactos: 0, total: partidosScope.length };
     }
 
     function getPositionByPoints(item, ranking) {
-      const orderedPoints = [...new Set(ranking.map(row => row.puntos))]
-        .sort((a, b) => b - a);
-
+      const orderedPoints = [...new Set(ranking.map(row => row.puntos))].sort((a, b) => b - a);
       const index = orderedPoints.indexOf(item.puntos);
       return index >= 0 ? index + 1 : "-";
-    }
-
-    function getRoundMatches(round) {
-      return partidos
-        .filter(partido => normalizeComparable(partido.ronda) === normalizeComparable(round))
-        .sort(sortByDateAndHour);
     }
 
     function isRoundFinished(round) {
@@ -1400,22 +1395,23 @@
 
     function getCostPerParticipantForRound(round) {
       const normalizedRound = normalizeRound(round);
-
       if (normalizedRound === "16avos") return COSTO_POR_PARTICIPANTE_16AVOS;
       if (normalizedRound === "Octavos") return COSTO_POR_PARTICIPANTE_OCTAVOS;
       if (normalizedRound === "Cuartos") return COSTO_POR_PARTICIPANTE_CUARTOS;
       if (normalizedRound === "Semifinal") return COSTO_POR_PARTICIPANTE_SEMIFINAL;
       if (normalizedRound === "Final") return COSTO_POR_PARTICIPANTE_FINAL;
-
       return 0;
+    }
+
+    function shouldShowRoundPrize(round) {
+      return !isFinalPoolRound(round);
     }
 
     function getRoundWinners(round) {
       if (!isRoundFinished(round)) return [];
-
-      const ranking = calculateRanking(getRoundMatches(round));
+      const matches = getRoundMatches(round);
+      const ranking = calculateRanking(matches);
       if (!ranking.length) return [];
-
       const maxPoints = Math.max(...ranking.map(row => row.puntos));
       return ranking.filter(row => row.puntos === maxPoints);
     }
@@ -1423,76 +1419,129 @@
     function getRoundPrizeAmount(round) {
       const winners = getRoundWinners(round);
       if (!winners.length) return 0;
-
-      const pool = getParticipants().length * getCostPerParticipantForRound(round);
+      const pool = getParticipantsForMatches(getRoundMatches(round)).length * getCostPerParticipantForRound(round);
       return pool / winners.length;
     }
 
     function getParticipantRoundPrize(nombre, round) {
+      if (!shouldShowRoundPrize(round)) return 0;
       const winners = getRoundWinners(round);
-      const wonRound = winners.some(row => row.nombre === nombre);
-      return wonRound ? getRoundPrizeAmount(round) : 0;
+      return winners.some(row => row.nombre === nombre) ? getRoundPrizeAmount(round) : 0;
     }
 
-    function calculateParticipantPrizeStats(nombre) {
-      const details = getRounds()
-        .map(round => ({ round, amount: getRoundWinners(round).some(row => row.nombre === nombre) ? getRoundPrizeAmount(round) : 0 }))
-        .filter(item => item.amount > 0);
+    function getFinalPoolWinners() {
+      if (!isFinalPoolFinished()) return [];
+      const matches = getFinalPoolMatches();
+      const ranking = calculateRanking(matches);
+      if (!ranking.length) return [];
+      const maxPoints = Math.max(...ranking.map(row => row.puntos));
+      return ranking.filter(row => row.puntos === maxPoints);
+    }
 
-      const total = details.reduce((sum, item) => sum + item.amount, 0);
-      return { total, details };
+    function getFinalPoolPrizeAmount() {
+      const winners = getFinalPoolWinners();
+      if (!winners.length) return 0;
+      const pool = getParticipantsForMatches(getFinalPoolMatches()).length * COSTO_POR_PARTICIPANTE_RONDAS_FINALES;
+      return pool / winners.length;
+    }
+
+    function getParticipantFinalPoolPrize(nombre) {
+      const winners = getFinalPoolWinners();
+      return winners.some(row => row.nombre === nombre) ? getFinalPoolPrizeAmount() : 0;
     }
 
     function getCurrentRound() {
       const rounds = getRounds();
-
       const firstPendingRound = rounds.find(round => {
         const matches = getRoundMatches(round);
         return matches.length && matches.some(match => !match.ganador);
       });
-
-      if (firstPendingRound) return firstPendingRound;
-
-      return rounds[rounds.length - 1] || "16avos";
+      return firstPendingRound || rounds[rounds.length - 1] || "16avos";
     }
 
-    function getActiveRoundMatches() {
-      return getRoundMatches(activeRound);
-    }
-
-    function renderRoundButtons(currentRound = activeRound) {
+    function renderRoundButtons() {
       roundNav.querySelectorAll("[data-round]").forEach(btn => {
         const round = btn.dataset.round;
         const hasMatches = getRoundMatches(round).length > 0;
         btn.disabled = !hasMatches;
-        btn.classList.toggle("active", normalizeComparable(round) === normalizeComparable(currentRound));
+        btn.classList.toggle("active", activeView === "round" && normalizeComparable(round) === normalizeComparable(activeRound));
       });
+
+      const finalGeneralBtn = roundNav.querySelector("[data-view='finalGeneral']");
+      if (finalGeneralBtn) {
+        finalGeneralBtn.disabled = getFinalPoolMatches().length === 0;
+        finalGeneralBtn.classList.toggle("active", activeView === "finalGeneral");
+      }
     }
 
-    function renderActiveRoundView() {
-      renderRoundButtons(activeRound);
-      renderTodayPendingMatches(activeRound);
-      renderRanking(activeRound);
-      renderParticipantDetail(selectedParticipant, activeRound);
+    function renderView() {
+      renderRoundButtons();
+      if (activeView === "finalGeneral") {
+        renderFinalGeneralView();
+      } else {
+        renderRoundView(activeRound);
+      }
       lastMainHash = buildMainHash();
+    }
+
+    function ensureSelectedParticipantForMatches(matches, keepCurrent = true) {
+      const participants = getParticipantsForMatches(matches);
+      if (!participants.length) return null;
+      if (keepCurrent && selectedParticipant && participants.includes(selectedParticipant)) return selectedParticipant;
+      return participants[0];
     }
 
     function selectRound(round) {
       const normalizedRound = normalizeRound(round);
       if (!getRoundMatches(normalizedRound).length) return;
-
+      activeView = "round";
       activeRound = normalizedRound;
+      selectedParticipant = ensureSelectedParticipantForMatches(getRoundMatches(activeRound));
       showMainView();
-      renderActiveRoundView();
+      renderView();
       history.pushState(null, "", `#${buildMainHash()}`);
+      setTimeout(() => rankingSection.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    }
 
-      setTimeout(() => {
-        rankingSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
+    function selectFinalGeneralView() {
+      if (!getFinalPoolMatches().length) return;
+      activeView = "finalGeneral";
+      selectedParticipant = null;
+      showMainView();
+      renderView();
+      history.pushState(null, "", `#${buildMainHash()}`);
+      setTimeout(() => rankingSection.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+    }
+
+    function renderRoundView(round) {
+      todayPendingSection.hidden = false;
+      rankingSection.hidden = false;
+      detailSection.hidden = false;
+      matchSection.hidden = true;
+
+      selectedParticipant = ensureSelectedParticipantForMatches(getRoundMatches(round));
+      renderTodayPendingMatches(round);
+      renderRanking(round);
+      renderParticipantDetail(selectedParticipant, round);
+    }
+
+    function renderFinalGeneralView() {
+      todayPendingSection.hidden = true;
+      rankingSection.hidden = false;
+      matchSection.hidden = true;
+
+      renderFinalGeneralRanking();
+
+      if (selectedParticipant) {
+        detailSection.hidden = false;
+        renderFinalGeneralParticipantDetail(selectedParticipant);
+      } else {
+        detailSection.hidden = true;
+        participantDetailEl.innerHTML = "";
+      }
     }
 
     function renderTodayPendingMatches(round = activeRound) {
-      // 16avos ya terminó, así que no se muestra esta sección en esa pestaña.
       if (normalizeComparable(round) === normalizeComparable("16avos")) {
         todayPendingSection.hidden = true;
         todayPendingMatchesEl.innerHTML = "";
@@ -1500,7 +1549,6 @@
       }
 
       todayPendingSection.hidden = false;
-
       const today = getTodayISODate();
       todayPendingTitleEl.textContent = `Partidos pendientes de hoy · ${round}`;
 
@@ -1530,10 +1578,13 @@
 
     function renderRanking(round = activeRound) {
       const matches = getRoundMatches(round);
-      const ranking = calculateRanking(matches);
+      const participants = getParticipantsForMatches(matches);
+      const ranking = calculateRanking(matches, participants);
       rankingTitleEl.textContent = `Ranking de ${round}`;
-      rankingHintEl.hidden = true;
-      rankingHintEl.textContent = "";
+      rankingHintEl.hidden = !isFinalPoolRound(round);
+      rankingHintEl.textContent = isFinalPoolRound(round)
+        ? "Esta tabla solo muestra el ranking de esta fase. El premio de Cuartos + Semifinal + Final está en el botón General."
+        : "";
 
       if (!matches.length) {
         rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay partidos capturados para ${escapeHTML(round)}.</div>`;
@@ -1541,61 +1592,93 @@
       }
 
       if (!ranking.length) {
-        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay predicciones capturadas.</div>`;
+        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay predicciones capturadas para ${escapeHTML(round)}.</div>`;
         return;
       }
 
       const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+      rankingListEl.innerHTML = ranking.map(item => renderRankRow(item, ranking, maxPoints, round, false)).join("");
+    }
 
-      rankingListEl.innerHTML = ranking.map(item => {
-        const position = getPositionByPoints(item, ranking);
-        const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
-        const isActive = item.nombre === selectedParticipant ? "active" : "";
-        const roundPrize = getParticipantRoundPrize(item.nombre, round);
+    function renderFinalGeneralRanking() {
+      const matches = getFinalPoolMatches();
+      const participants = getParticipantsForMatches(matches);
+      const ranking = calculateRanking(matches, participants);
+      const finished = isFinalPoolFinished();
+      const winners = finished ? getFinalPoolWinners() : [];
+      const prizeAmount = finished ? getFinalPoolPrizeAmount() : 0;
 
-        return `
-          <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}')">
-            <div class="rank-pos">${position}</div>
+      rankingTitleEl.textContent = "Ranking general · Cuartos + Semifinal + Final";
+      rankingHintEl.hidden = false;
 
-            <div class="participant-name ${roundPrize > 0 ? "with-prize" : ""}" title="${escapeHTML(item.nombre)}">
-              <span class="name-text">${escapeHTML(item.nombre)}</span>
-              ${roundPrize > 0 ? `<span class="money-tag">${formatMoney(roundPrize)}</span>` : ""}
-            </div>
+      if (!hasAllFinalPoolRounds()) {
+        rankingHintEl.textContent = "Aquí se sumarán Cuartos, Semifinal y Final. El premio aparecerá hasta que las tres rondas estén capturadas y completadas.";
+      } else if (!finished) {
+        rankingHintEl.textContent = "Aquí se suman Cuartos, Semifinal y Final. El premio aparecerá cuando todos los partidos de estas rondas tengan ganador.";
+      } else {
+        rankingHintEl.textContent = winners.length === 1
+          ? `Premio final para ${winners[0].nombre}: ${formatMoney(prizeAmount)}.`
+          : `Premio final dividido entre ${winners.length} ganadores: ${formatMoney(prizeAmount)} para cada uno.`;
+      }
 
-            <div class="bar-track" aria-label="${item.puntos} puntos">
-              <div class="bar-fill" style="width: ${width}%"></div>
-            </div>
+      if (!matches.length) {
+        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay partidos capturados para Cuartos, Semifinal y Final.</div>`;
+        return;
+      }
 
-            <div class="rank-points">${item.puntos} pts</div>
+      if (!ranking.length) {
+        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay predicciones capturadas para Cuartos, Semifinal y Final.</div>`;
+        return;
+      }
 
-            <div class="mini-stats">
-              <span class="pill green">${item.aciertos} aciertos</span>
-              <span class="pill red">${item.errores} errores</span>
-              <span class="pill gray">${item.pendientes} pendientes</span>
-              ${usesScoreBonus(round) ? `<span class="pill yellow">${item.marcadoresExactos} marcadores exactos</span>` : ""}
-            </div>
-          </article>
-        `;
-      }).join("");
+      const maxPoints = Math.max(...ranking.map(item => item.puntos), 1);
+      rankingListEl.innerHTML = ranking.map(item => renderRankRow(item, ranking, maxPoints, "FinalGeneral", true)).join("");
+    }
+
+    function renderRankRow(item, ranking, maxPoints, round, isGeneral) {
+      const position = getPositionByPoints(item, ranking);
+      const width = Math.max((item.puntos / maxPoints) * 100, item.puntos > 0 ? 4 : 0);
+      const isActive = item.nombre === selectedParticipant ? "active" : "";
+      const roundPrize = isGeneral ? getParticipantFinalPoolPrize(item.nombre) : getParticipantRoundPrize(item.nombre, round);
+      const scoreBonus = isGeneral || usesScoreBonus(round);
+
+      return `
+        <article class="rank-row ${isActive}" onclick="selectParticipant('${escapeForAttribute(item.nombre)}')">
+          <div class="rank-pos">${position}</div>
+          <div class="participant-name ${roundPrize > 0 ? "with-prize" : ""}" title="${escapeHTML(item.nombre)}">
+            <span class="name-text">${escapeHTML(item.nombre)}</span>
+            ${roundPrize > 0 ? `<span class="money-tag">${formatMoney(roundPrize)}</span>` : ""}
+          </div>
+          <div class="bar-track" aria-label="${item.puntos} puntos">
+            <div class="bar-fill" style="width: ${width}%"></div>
+          </div>
+          <div class="rank-points">${item.puntos} pts</div>
+          <div class="mini-stats">
+            <span class="pill green">${item.aciertos} aciertos</span>
+            <span class="pill red">${item.errores} errores</span>
+            <span class="pill gray">${item.pendientes} pendientes</span>
+            ${scoreBonus ? `<span class="pill yellow">${item.marcadoresExactos} marcadores exactos</span>` : ""}
+          </div>
+        </article>
+      `;
     }
 
     function selectParticipant(nombre) {
       selectedParticipant = nombre;
       showMainView();
-      renderActiveRoundView();
+      renderView();
       history.pushState(null, "", `#${buildMainHash()}`);
-
-      setTimeout(() => {
-        detailSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
+      setTimeout(() => detailSection.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
     }
 
     window.selectParticipant = selectParticipant;
 
     function renderParticipantDetail(nombre, round = activeRound) {
       detailTitleEl.textContent = `Vista individual · ${round}`;
-      detailHintEl.hidden = true;
-      detailHintEl.textContent = "";
+      detailHintEl.hidden = !usesScoreBonus(round);
+      detailHintEl.textContent = usesScoreBonus(round)
+        ? "También se muestra la predicción de goles para calcular el punto extra por marcador exacto."
+        : "";
 
       if (!nombre) {
         participantDetailEl.className = "detail-empty";
@@ -1630,8 +1713,43 @@
           </div>
           <div class="big-score">${stats.puntos} / ${maxPointsByRound} pts</div>
         </div>
-
         ${renderParticipantRound(nombre, round, predMap)}
+      `;
+    }
+
+    function renderFinalGeneralParticipantDetail(nombre) {
+      detailTitleEl.textContent = `Vista individual · Cuartos + Semifinal + Final`;
+      detailHintEl.hidden = false;
+      detailHintEl.textContent = "Aquí se muestra la quiniela completa de las últimas rondas.";
+
+      const predMap = buildPredictionMap();
+      const matches = getFinalPoolMatches();
+      const stats = calculateParticipantStats(nombre, matches);
+      const ranking = calculateRanking(matches);
+      const position = getPositionByPoints(stats, ranking);
+      const prizeAmount = getParticipantFinalPoolPrize(nombre);
+      const maxPoints = matches.reduce((sum, partido) => sum + getMaxPointsForRound(partido.ronda), 0);
+
+      participantDetailEl.className = "";
+      participantDetailEl.innerHTML = `
+        <div class="participant-header">
+          <div>
+            <h3 class="participant-title">
+              <span>${escapeHTML(nombre)}</span>
+              ${prizeAmount > 0 ? `<span class="money-tag big">Ganado: ${formatMoney(prizeAmount)}</span>` : ""}
+            </h3>
+            <div>
+              <span class="pill blue">General finales</span>
+              <span class="pill yellow">Puesto ${position}</span>
+              <span class="pill green">${stats.aciertos} aciertos</span>
+              <span class="pill red">${stats.errores} errores</span>
+              <span class="pill gray">${stats.pendientes} pendientes</span>
+              <span class="pill yellow">${stats.marcadoresExactos} marcadores exactos</span>
+            </div>
+          </div>
+          <div class="big-score">${stats.puntos} / ${maxPoints} pts</div>
+        </div>
+        ${FINAL_POOL_ROUNDS.map(round => renderParticipantRound(nombre, round, predMap)).join("")}
       `;
     }
 
@@ -1639,7 +1757,12 @@
       const matches = getRoundMatches(round);
 
       if (!matches.length) {
-        return `<div class="detail-empty">Todavía no hay partidos capturados para ${escapeHTML(round)}.</div>`;
+        return `
+          <div class="detail-round" id="${getParticipantRoundAnchorId(round)}">
+            <div class="detail-round-head"><strong>${escapeHTML(round)}</strong></div>
+            <div class="detail-empty">Todavía no hay partidos capturados para ${escapeHTML(round)}.</div>
+          </div>
+        `;
       }
 
       return `
@@ -1650,7 +1773,6 @@
               ${usesScoreBonus(round) ? `<span class="pill yellow">+1 marcador exacto</span>` : ""}
             </div>
           </div>
-
           <div class="table-wrap">
             <table>
               <thead>
@@ -1665,7 +1787,6 @@
                   const prediction = predMap.get(`${nombre}::${partido.id}`);
                   const prediccion = prediction?.prediccion || "Sin predicción";
                   const result = calculateMatchPoints(partido, prediction);
-
                   return `
                     <tr class="${result.status} clickable-row" onclick="selectMatch('${escapeForAttribute(partido.id)}')" title="Ver predicciones de este partido">
                       <td>
@@ -1703,11 +1824,7 @@
             ${localScore}
             <span class="prediction-box ${localChecked}" aria-label="Predicción local"></span>
           </div>
-
-          <div class="prediction-center">
-            <span>VS</span>
-          </div>
-
+          <div class="prediction-center"><span>VS</span></div>
           <div class="prediction-side visitante">
             <span class="prediction-box ${visitanteChecked}" aria-label="Predicción visitante"></span>
             ${visitanteScore}
@@ -1720,16 +1837,12 @@
 
     function renderPredictedGoalBadge(partido, prediction, side) {
       if (!usesScoreBonus(partido.ronda)) return "";
-
       const teamName = side === "local" ? partido.local : partido.visitante;
       const rawValue = side === "local" ? prediction?.golesLocal : prediction?.golesVisitante;
       const value = normalizeGoalValue(rawValue);
       const displayValue = value === "" ? "-" : escapeHTML(value);
       const emptyClass = value === "" ? "empty" : "";
-      const label = value === ""
-        ? `Sin goles predichos para ${teamName}`
-        : `${teamName}: ${value} goles predichos`;
-
+      const label = value === "" ? `Sin goles predichos para ${teamName}` : `${teamName}: ${value} goles predichos`;
       return `<span class="prediction-goal ${emptyClass}" title="${escapeForAttribute(label)}" aria-label="${escapeForAttribute(label)}">${displayValue}</span>`;
     }
 
@@ -1743,11 +1856,9 @@
 
     function renderRealResult(partido) {
       if (!partido.ganador) return `<span>Pendiente</span>`;
-
       const scoreLine = usesScoreBonus(partido.ronda)
         ? `<div class="prediction-help">Marcador real: ${formatScoreDisplay(partido.golesLocal, partido.golesVisitante)}</div>`
         : "";
-
       return `${teamWithFlag(partido.ganador)}${scoreLine}`;
     }
 
@@ -1760,29 +1871,19 @@
 
     function renderPointsBreakdown(partido, result) {
       const parts = [result.winnerHit ? "+1 avance" : "+0 avance"];
-
-      if (usesScoreBonus(partido.ronda)) {
-        parts.push(result.scoreHit ? "+1 marcador" : "+0 marcador");
-      }
-
+      if (usesScoreBonus(partido.ronda)) parts.push(result.scoreHit ? "+1 marcador" : "+0 marcador");
       return parts.join(" · ");
     }
 
     function renderExactScoreTag(result) {
       if (!result?.scoreHit) return "";
-
-      return `
-        <div class="score-bonus-tag-wrap">
-          <span class="pill blue exact-score-tag">Marcador exacto +1 extra</span>
-        </div>
-      `;
+      return `<div class="score-bonus-tag-wrap"><span class="pill blue exact-score-tag">Marcador exacto +1 extra</span></div>`;
     }
 
     function selectMatch(idPartido) {
       const normalizedId = normalizeId(idPartido);
       const partido = partidos.find(item => normalizeId(item.id) === normalizedId);
       if (partido?.ronda) activeRound = partido.ronda;
-
       lastMainHash = buildMainHash();
       location.hash = `partido=${encodeURIComponent(normalizedId)}`;
       renderMatchDetail(normalizedId);
@@ -1792,7 +1893,6 @@
 
     function renderMatchDetail(idPartido) {
       const partido = partidos.find(item => normalizeId(item.id) === normalizeId(idPartido));
-
       if (!partido) {
         showMatchView();
         matchDetailEl.innerHTML = `<div class="detail-empty">No se encontró el partido seleccionado.</div>`;
@@ -1801,18 +1901,17 @@
 
       const predMap = buildPredictionMap();
       const scoreRound = usesScoreBonus(partido.ronda);
-      const rows = getParticipants().map(nombre => {
+      const participants = getParticipantsForMatches(getRoundMatches(partido.ronda));
+      const rows = participants.map(nombre => {
         const prediction = predMap.get(`${nombre}::${partido.id}`);
         const prediccion = prediction?.prediccion || "Sin predicción";
         const result = calculateMatchPoints(partido, prediction);
         const tipo = getPredictionType(partido, prediccion);
-
         return { nombre, prediccion, prediction, result, tipo };
       }).sort(sortMatchPredictionRows);
 
       const totals = rows.reduce((acc, row) => {
         acc.total++;
-
         if (row.tipo === "local") acc.local++;
         else if (row.tipo === "visitante") acc.visitante++;
         else acc.sinPrediccion++;
@@ -1823,12 +1922,10 @@
           else acc.errores++;
           if (row.result.scoreHit) acc.marcadoresExactos++;
         }
-
         return acc;
       }, { total: 0, local: 0, visitante: 0, sinPrediccion: 0, aciertos: 0, errores: 0, pendientes: 0, marcadoresExactos: 0 });
 
       showMatchView();
-
       matchDetailEl.innerHTML = `
         <div class="match-detail-card">
           <div class="match-detail-title">
@@ -1836,9 +1933,7 @@
             <span>vs</span>
             ${teamWithFlag(partido.visitante)}
           </div>
-
           <div class="match-meta">${escapeHTML(partido.ronda)} · ${formatDate(partido.fecha)} · ${escapeHTML(partido.hora)}</div>
-
           <div class="match-summary-pills">
             <span class="pill blue">Ganador: ${teamWithFlag(partido.ganador || "Pendiente")}</span>
             ${scoreRound && partido.ganador ? `<span class="pill blue">Marcador real: ${formatScoreDisplay(partido.golesLocal, partido.golesVisitante)}</span>` : ""}
@@ -1847,14 +1942,12 @@
             <span class="pill gray">${totals.pendientes} pendientes</span>
             ${scoreRound ? `<span class="pill yellow">${totals.marcadoresExactos} marcadores exactos</span>` : ""}
           </div>
-
           <div class="match-summary-pills">
             <span class="pill blue">${teamWithFlag(partido.local)}: ${totals.local}</span>
             <span class="pill blue">${teamWithFlag(partido.visitante)}: ${totals.visitante}</span>
             ${totals.sinPrediccion ? `<span class="pill gray">Sin predicción: ${totals.sinPrediccion}</span>` : ""}
           </div>
         </div>
-
         <div class="table-wrap">
           <table>
             <thead>
@@ -1884,7 +1977,6 @@
           </table>
         </div>
       `;
-
       matchSection.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
@@ -1904,13 +1996,8 @@
 
     function goBackToMain() {
       showMainView();
-
-      if (lastMainHash) {
-        history.replaceState(null, "", `#${lastMainHash}`);
-      } else {
-        history.replaceState(null, "", location.pathname);
-      }
-
+      if (lastMainHash) history.replaceState(null, "", `#${lastMainHash}`);
+      else history.replaceState(null, "", location.pathname);
       renderRouteFromHash();
     }
 
@@ -1925,27 +2012,31 @@
 
       showMainView();
 
-      const roundFromHash = getRoundFromHash();
-      if (roundFromHash && getRoundMatches(roundFromHash).length) {
-        activeRound = roundFromHash;
-      } else if (!getRoundMatches(activeRound).length) {
-        activeRound = getCurrentRound();
+      if (getViewFromHash() === "finalGeneral") {
+        activeView = "finalGeneral";
+        const participantFromHash = getParticipantFromHash();
+        selectedParticipant = participantFromHash || null;
+        renderView();
+        return;
       }
+
+      activeView = "round";
+      const roundFromHash = getRoundFromHash();
+      if (roundFromHash && getRoundMatches(roundFromHash).length) activeRound = roundFromHash;
+      else if (!getRoundMatches(activeRound).length) activeRound = getCurrentRound();
+      else activeRound = getCurrentRound();
 
       const participantFromHash = getParticipantFromHash();
-      if (participantFromHash) {
-        selectedParticipant = participantFromHash;
-      } else if (!selectedParticipant) {
-        selectedParticipant = getParticipants()[0] || null;
-      }
+      if (participantFromHash) selectedParticipant = participantFromHash;
+      else selectedParticipant = ensureSelectedParticipantForMatches(getRoundMatches(activeRound));
 
-      renderActiveRoundView();
+      renderView();
     }
 
     function showMainView() {
-      todayPendingSection.hidden = false;
+      todayPendingSection.hidden = activeView === "finalGeneral";
       rankingSection.hidden = false;
-      detailSection.hidden = false;
+      detailSection.hidden = activeView === "finalGeneral" && !selectedParticipant;
       matchSection.hidden = true;
     }
 
@@ -1957,6 +2048,11 @@
     }
 
     function buildMainHash() {
+      if (activeView === "finalGeneral") {
+        const params = ["vista=finalGeneral"];
+        if (selectedParticipant) params.push(`participante=${encodeURIComponent(selectedParticipant)}`);
+        return params.join("&");
+      }
       const params = [`ronda=${encodeURIComponent(activeRound)}`];
       if (selectedParticipant) params.push(`participante=${encodeURIComponent(selectedParticipant)}`);
       return params.join("&");
@@ -1984,6 +2080,12 @@
       return match ? normalizeRound(match[1]) : null;
     }
 
+    function getViewFromHash() {
+      const hash = decodeURIComponent(location.hash || "");
+      const match = hash.match(/vista=([^&]+)/);
+      return match ? match[1] : null;
+    }
+
     function sortByDateAndHour(a, b) {
       const dateA = parseDateTime(a.fecha, a.hora);
       const dateB = parseDateTime(b.fecha, b.hora);
@@ -1997,30 +2099,20 @@
 
     function normalizeDate(fecha) {
       const clean = cleanValue(fecha);
-
       if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
-
       const parts = clean.split(/[\/\-]/).map(part => part.padStart(2, "0"));
       if (parts.length === 3) {
         const [day, month, year] = parts;
         if (year.length === 4) return `${year}-${month}-${day}`;
       }
-
       return clean;
     }
 
     function formatDate(fecha) {
       const normalized = normalizeDate(fecha);
       const date = new Date(`${normalized}T00:00:00`);
-
       if (Number.isNaN(date.getTime())) return fecha;
-
-      return date.toLocaleDateString("es-MX", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric"
-      });
+      return date.toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
     }
 
     function getTodayISODate() {
@@ -2033,19 +2125,10 @@
 
     function teamWithFlag(teamName) {
       const cleanName = cleanValue(teamName);
-
       if (!cleanName) return "";
-
-      if (["Pendiente", "Sin predicción"].includes(cleanName)) {
-        return `<span>${escapeHTML(cleanName)}</span>`;
-      }
-
+      if (["Pendiente", "Sin predicción"].includes(cleanName)) return `<span>${escapeHTML(cleanName)}</span>`;
       const code = FLAGS[cleanName];
-
-      if (!code) {
-        return `<span>${escapeHTML(cleanName)}</span>`;
-      }
-
+      if (!code) return `<span>${escapeHTML(cleanName)}</span>`;
       return `
         <span class="team-name" title="${escapeHTML(cleanName)}">
           <img class="team-flag" src="https://flagcdn.com/24x18/${code}.png" srcset="https://flagcdn.com/48x36/${code}.png 2x" alt="Bandera de ${escapeHTML(cleanName)}" loading="lazy" />
@@ -2057,13 +2140,7 @@
     function formatMoney(amount) {
       const value = Number(amount) || 0;
       const isInteger = Math.abs(value - Math.round(value)) < 0.001;
-
-      return value.toLocaleString("es-MX", {
-        style: "currency",
-        currency: "MXN",
-        minimumFractionDigits: isInteger ? 0 : 2,
-        maximumFractionDigits: 2
-      });
+      return value.toLocaleString("es-MX", { style: "currency", currency: "MXN", minimumFractionDigits: isInteger ? 0 : 2, maximumFractionDigits: 2 });
     }
 
     function setLoading(isLoading) {
@@ -2076,9 +2153,7 @@
       console.error(error);
       statusEl.textContent = "No se pudieron cargar los datos.";
       errorBox.hidden = false;
-      errorBox.textContent =
-        `${error.message}\n\n` +
-        `Revisa que el Google Sheet esté compartido como "Cualquier persona con el enlace puede ver" y que las hojas se llamen exactamente "${SHEET_PARTIDOS}" y "${SHEET_PREDICCIONES}".`;
+      errorBox.textContent = `${error.message}\n\nRevisa que el Google Sheet esté compartido como "Cualquier persona con el enlace puede ver" y que las hojas se llamen exactamente "${SHEET_PARTIDOS}" y "${SHEET_PREDICCIONES}".`;
     }
 
     function clearError() {
@@ -2101,7 +2176,6 @@
         .replace(/'/g, "\\'")
         .replace(/\"/g, "&quot;");
     }
-
   </script>
 </body>
 </html>
