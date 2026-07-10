@@ -1583,7 +1583,7 @@
       rankingTitleEl.textContent = `Ranking de ${round}`;
       rankingHintEl.hidden = !isFinalPoolRound(round);
       rankingHintEl.textContent = isFinalPoolRound(round)
-        ? "Esta tabla solo muestra el ranking de esta fase. El premio de Cuartos + Semifinal + Final está en el botón General."
+        ? ""
         : "";
 
       if (!matches.length) {
@@ -1612,9 +1612,9 @@
       rankingHintEl.hidden = false;
 
       if (!hasAllFinalPoolRounds()) {
-        rankingHintEl.textContent = "Aquí se sumarán Cuartos, Semifinal y Final. El premio aparecerá hasta que las tres rondas estén capturadas y completadas.";
+        rankingHintEl.textContent = "";
       } else if (!finished) {
-        rankingHintEl.textContent = "Aquí se suman Cuartos, Semifinal y Final. El premio aparecerá cuando todos los partidos de estas rondas tengan ganador.";
+        rankingHintEl.textContent = "";
       } else {
         rankingHintEl.textContent = winners.length === 1
           ? `Premio final para ${winners[0].nombre}: ${formatMoney(prizeAmount)}.`
@@ -1677,7 +1677,7 @@
       detailTitleEl.textContent = `Vista individual · ${round}`;
       detailHintEl.hidden = !usesScoreBonus(round);
       detailHintEl.textContent = usesScoreBonus(round)
-        ? "También se muestra la predicción de goles para calcular el punto extra por marcador exacto."
+        ? ""
         : "";
 
       if (!nombre) {
@@ -2153,7 +2153,7 @@
       console.error(error);
       statusEl.textContent = "No se pudieron cargar los datos.";
       errorBox.hidden = false;
-      errorBox.textContent = `${error.message}\n\nRevisa que el Google Sheet esté compartido como "Cualquier persona con el enlace puede ver" y que las hojas se llamen exactamente "${SHEET_PARTIDOS}" y "${SHEET_PREDICCIONES}".`;
+      errorBox.textContent = `${error.message}\n\nERROR`;
     }
 
     function clearError() {
