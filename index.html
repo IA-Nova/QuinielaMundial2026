@@ -877,7 +877,7 @@
         <button class="round-btn" type="button" data-round="Cuartos">Cuartos</button>
         <button class="round-btn" type="button" data-round="Semifinal">Semifinal</button>
         <button class="round-btn" type="button" data-round="Final">Final</button>
-        <button class="round-btn" type="button" data-view="finalGeneral">General 4tos-Semi-Final</button>
+        <button class="round-btn" type="button" data-view="finalGeneral">General final</button>
       </div>
 
       <div class="actions">
@@ -935,6 +935,7 @@
     const SPREADSHEET_ID = "1t-b-QrwDZbHZT1yl9DeEOYODAlp43tWsUm1nORyjydM";
     const SHEET_PARTIDOS = "Partidos";
     const SHEET_PREDICCIONES = "Predicciones";
+    const SHEET_PRONOSTICOS_FINALES = "PronosticosFinales";
 
     const COSTO_POR_PARTICIPANTE_16AVOS = 50;
     const COSTO_POR_PARTICIPANTE_OCTAVOS = 50;
@@ -946,6 +947,13 @@
     const ROUND_ORDER = ["16avos", "Octavos", "Cuartos", "Semifinal", "Final"];
     const FINAL_POOL_ROUNDS = ["Cuartos", "Semifinal", "Final"];
     const SCORE_BONUS_ROUNDS = ["Octavos", "Cuartos", "Semifinal", "Final"];
+
+    const FINAL_PREDICTION_FIELDS = [
+      { key: "campeon", label: "Campeón", type: "team" },
+      { key: "subcampeon", label: "Subcampeón", type: "team" },
+      { key: "tercerLugar", label: "Tercer lugar", type: "team" },
+      { key: "botaDeOro", label: "Bota de Oro", type: "player" }
+    ];
 
     const FLAGS = {
       "México": "mx",
@@ -1000,6 +1008,8 @@
 
     let partidos = [];
     let predicciones = [];
+    let pronosticosFinales = [];
+    let resultadoFinalReal = null;
     let selectedParticipant = null;
     let activeRound = "16avos";
     let activeView = "round";
@@ -1048,9 +1058,10 @@
         setLoading(true);
         clearError();
 
-        const [partidosCsv, prediccionesCsv] = await Promise.all([
+        const [partidosCsv, prediccionesCsv, pronosticosFinalesCsv] = await Promise.all([
           fetchCsv(SHEET_PARTIDOS),
-          fetchCsv(SHEET_PREDICCIONES)
+          fetchCsv(SHEET_PREDICCIONES),
+          fetchCsv(SHEET_PRONOSTICOS_FINALES)
         ]);
 
         partidos = csvToObjects(partidosCsv)
@@ -1061,6 +1072,13 @@
         predicciones = csvToObjects(prediccionesCsv)
           .map(normalizePrediccion)
           .filter(pred => pred.participante && pred.partidoId);
+
+        const pronosticosCargados = csvToObjects(pronosticosFinalesCsv)
+          .map(normalizePronosticoFinal)
+          .filter(item => item.participante);
+
+        resultadoFinalReal = pronosticosCargados.find(item => isResultadoReal(item.participante)) || null;
+        pronosticosFinales = pronosticosCargados.filter(item => !isResultadoReal(item.participante));
 
         validateData();
         renderRouteFromHash();
@@ -1219,6 +1237,20 @@
       };
     }
 
+    function normalizePronosticoFinal(row) {
+      return {
+        participante: cleanValue(row.participante || row.nombre),
+        campeon: cleanValue(row.campeon),
+        subcampeon: cleanValue(row.subcampeon),
+        tercerLugar: cleanValue(row.tercer_lugar || row.tercerlugar || row.tercero),
+        botaDeOro: cleanValue(row.bota_de_oro || row.botadeoro || row.bota || row.campeon_goleador || row.goleador)
+      };
+    }
+
+    function isResultadoReal(nombre) {
+      return normalizeComparable(nombre) === normalizeComparable("RESULTADO REAL");
+    }
+
     function validateData() {
       if (!partidos.length) {
         throw new Error(`La hoja "${SHEET_PARTIDOS}" no tiene partidos o no tiene la columna ID.`);
@@ -1270,7 +1302,10 @@
 
     function isFinalPoolFinished() {
       const matches = getFinalPoolMatches();
-      return hasAllFinalPoolRounds() && matches.length > 0 && matches.every(partido => Boolean(partido.ganador));
+      return hasAllFinalPoolRounds()
+        && matches.length > 0
+        && matches.every(partido => Boolean(partido.ganador))
+        && areFinalPredictionResultsComplete();
     }
 
     function getParticipantsForMatches(partidosScope = partidos) {
@@ -1282,12 +1317,103 @@
         .sort((a, b) => a.localeCompare(b, "es"));
     }
 
+    function getFinalPredictionParticipants() {
+      return [...new Set(pronosticosFinales
+        .map(item => item.participante)
+        .filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, "es"));
+    }
+
+    function getFinalGeneralParticipants() {
+      return [...new Set([
+        ...getParticipantsForMatches(getFinalPoolMatches()),
+        ...getFinalPredictionParticipants()
+      ])].sort((a, b) => a.localeCompare(b, "es"));
+    }
+
     function buildPredictionMap() {
       const map = new Map();
       predicciones.forEach(pred => {
         map.set(`${pred.participante}::${pred.partidoId}`, pred);
       });
       return map;
+    }
+
+    function buildFinalPredictionMap() {
+      const map = new Map();
+      pronosticosFinales.forEach(item => {
+        map.set(item.participante, item);
+      });
+      return map;
+    }
+
+    function getFinalPredictionForParticipant(nombre) {
+      return buildFinalPredictionMap().get(nombre) || {
+        participante: nombre,
+        campeon: "",
+        subcampeon: "",
+        tercerLugar: "",
+        botaDeOro: ""
+      };
+    }
+
+    function calculateFinalPredictionItem(predictionValue, realValue) {
+      const prediction = cleanValue(predictionValue);
+      const real = cleanValue(realValue);
+
+      if (!real) {
+        return {
+          puntos: 0,
+          displayPoints: "-",
+          status: "pending",
+          hit: false,
+          pending: true
+        };
+      }
+
+      const hit = Boolean(prediction) && normalizeComparable(prediction) === normalizeComparable(real);
+
+      return {
+        puntos: hit ? 1 : 0,
+        displayPoints: hit ? "1" : "0",
+        status: hit ? "ok" : "fail",
+        hit,
+        pending: false
+      };
+    }
+
+    function calculateFinalPredictionStats(nombre) {
+      const prediction = getFinalPredictionForParticipant(nombre);
+      const real = resultadoFinalReal || {};
+      const details = FINAL_PREDICTION_FIELDS.map(field => {
+        const result = calculateFinalPredictionItem(prediction[field.key], real[field.key]);
+        return {
+          ...field,
+          prediction: cleanValue(prediction[field.key]),
+          real: cleanValue(real[field.key]),
+          result
+        };
+      });
+
+      const positionDetails = details.filter(item => item.key !== "botaDeOro");
+      const botaDetail = details.find(item => item.key === "botaDeOro");
+
+      return {
+        puntos: details.reduce((sum, item) => sum + item.result.puntos, 0),
+        aciertos: details.filter(item => item.result.hit).length,
+        errores: details.filter(item => !item.result.pending && !item.result.hit).length,
+        pendientes: details.filter(item => item.result.pending).length,
+        posicionesAciertos: positionDetails.filter(item => item.result.hit).length,
+        posicionesPendientes: positionDetails.filter(item => item.result.pending).length,
+        botaAcierto: Boolean(botaDetail?.result.hit),
+        botaPendiente: Boolean(botaDetail?.result.pending),
+        details
+      };
+    }
+
+    function areFinalPredictionResultsComplete() {
+      if (!resultadoFinalReal) return false;
+      return FINAL_PREDICTION_FIELDS.every(field => cleanValue(resultadoFinalReal[field.key]) !== "");
     }
 
     function usesScoreBonus(round) {
@@ -1369,6 +1495,49 @@
       }).sort(sortRankingRows);
     }
 
+    function calculateFinalGeneralRanking() {
+      const matches = getFinalPoolMatches();
+      const participants = getFinalGeneralParticipants();
+      const matchRanking = calculateRanking(matches, participants);
+
+      return matchRanking.map(item => {
+        const extras = calculateFinalPredictionStats(item.nombre);
+
+        return {
+          ...item,
+          puntosPartidos: item.puntos,
+          aciertosPartidos: item.aciertos,
+          erroresPartidos: item.errores,
+          pendientesPartidos: item.pendientes,
+          puntos: item.puntos + extras.puntos,
+          aciertos: item.aciertos + extras.aciertos,
+          errores: item.errores + extras.errores,
+          pendientes: item.pendientes + extras.pendientes,
+          posicionesAciertos: extras.posicionesAciertos,
+          posicionesPendientes: extras.posicionesPendientes,
+          botaAcierto: extras.botaAcierto,
+          botaPendiente: extras.botaPendiente,
+          pronosticosFinales: extras
+        };
+      }).sort(sortRankingRows);
+    }
+
+    function calculateFinalGeneralParticipantStats(nombre) {
+      return calculateFinalGeneralRanking().find(item => item.nombre === nombre) || {
+        nombre,
+        puntos: 0,
+        aciertos: 0,
+        errores: 0,
+        pendientes: getFinalPoolMatches().length + FINAL_PREDICTION_FIELDS.length,
+        marcadoresExactos: 0,
+        posicionesAciertos: 0,
+        posicionesPendientes: 3,
+        botaAcierto: false,
+        botaPendiente: true,
+        pronosticosFinales: calculateFinalPredictionStats(nombre)
+      };
+    }
+
     function sortRankingRows(a, b) {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos;
       if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
@@ -1431,8 +1600,7 @@
 
     function getFinalPoolWinners() {
       if (!isFinalPoolFinished()) return [];
-      const matches = getFinalPoolMatches();
-      const ranking = calculateRanking(matches);
+      const ranking = calculateFinalGeneralRanking();
       if (!ranking.length) return [];
       const maxPoints = Math.max(...ranking.map(row => row.puntos));
       return ranking.filter(row => row.puntos === maxPoints);
@@ -1441,7 +1609,7 @@
     function getFinalPoolPrizeAmount() {
       const winners = getFinalPoolWinners();
       if (!winners.length) return 0;
-      const pool = getParticipantsForMatches(getFinalPoolMatches()).length * COSTO_POR_PARTICIPANTE_RONDAS_FINALES;
+      const pool = getFinalGeneralParticipants().length * COSTO_POR_PARTICIPANTE_RONDAS_FINALES;
       return pool / winners.length;
     }
 
@@ -1469,7 +1637,7 @@
 
       const finalGeneralBtn = roundNav.querySelector("[data-view='finalGeneral']");
       if (finalGeneralBtn) {
-        finalGeneralBtn.disabled = getFinalPoolMatches().length === 0;
+        finalGeneralBtn.disabled = getFinalPoolMatches().length === 0 && getFinalGeneralParticipants().length === 0;
         finalGeneralBtn.classList.toggle("active", activeView === "finalGeneral");
       }
     }
@@ -1504,7 +1672,7 @@
     }
 
     function selectFinalGeneralView() {
-      if (!getFinalPoolMatches().length) return;
+      if (!getFinalPoolMatches().length && !getFinalGeneralParticipants().length) return;
       activeView = "finalGeneral";
       selectedParticipant = null;
       showMainView();
@@ -1602,32 +1770,34 @@
 
     function renderFinalGeneralRanking() {
       const matches = getFinalPoolMatches();
-      const participants = getParticipantsForMatches(matches);
-      const ranking = calculateRanking(matches, participants);
+      const participants = getFinalGeneralParticipants();
+      const ranking = calculateFinalGeneralRanking();
       const finished = isFinalPoolFinished();
       const winners = finished ? getFinalPoolWinners() : [];
       const prizeAmount = finished ? getFinalPoolPrizeAmount() : 0;
 
-      rankingTitleEl.textContent = "Ranking general · Cuartos + Semifinal + Final";
+      rankingTitleEl.textContent = "Ranking general · Cuartos + Semifinal + Final + Pronósticos finales";
       rankingHintEl.hidden = false;
 
       if (!hasAllFinalPoolRounds()) {
-        rankingHintEl.textContent = "";
+        rankingHintEl.textContent = "El premio se mostrará cuando estén capturadas y finalizadas Cuartos, Semifinal y Final, junto con las posiciones finales y la Bota de Oro.";
+      } else if (!areFinalPredictionResultsComplete()) {
+        rankingHintEl.textContent = "El ranking ya incluye los pronósticos adicionales. El premio se mostrará cuando la fila RESULTADO REAL tenga Campeón, Subcampeón, Tercer Lugar y Bota de Oro.";
       } else if (!finished) {
-        rankingHintEl.textContent = "";
+        rankingHintEl.textContent = "El premio se mostrará cuando terminen todos los partidos de Cuartos, Semifinal y Final.";
       } else {
         rankingHintEl.textContent = winners.length === 1
           ? `Premio final para ${winners[0].nombre}: ${formatMoney(prizeAmount)}.`
           : `Premio final dividido entre ${winners.length} ganadores: ${formatMoney(prizeAmount)} para cada uno.`;
       }
 
-      if (!matches.length) {
-        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay partidos capturados para Cuartos, Semifinal y Final.</div>`;
+      if (!matches.length && !participants.length) {
+        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay datos capturados para la quiniela final.</div>`;
         return;
       }
 
       if (!ranking.length) {
-        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay predicciones capturadas para Cuartos, Semifinal y Final.</div>`;
+        rankingListEl.innerHTML = `<div class="detail-empty">Todavía no hay participantes capturados para la quiniela final.</div>`;
         return;
       }
 
@@ -1658,6 +1828,8 @@
             <span class="pill red">${item.errores} errores</span>
             <span class="pill gray">${item.pendientes} pendientes</span>
             ${scoreBonus ? `<span class="pill yellow">${item.marcadoresExactos} marcadores exactos</span>` : ""}
+            ${isGeneral ? `<span class="pill blue">${item.posicionesAciertos}/3 posiciones</span>` : ""}
+            ${isGeneral ? `<span class="pill ${item.botaPendiente ? "gray" : item.botaAcierto ? "green" : "red"}">${item.botaPendiente ? "Bota pendiente" : item.botaAcierto ? "Bota acertada" : "Bota fallada"}</span>` : ""}
           </div>
         </article>
       `;
@@ -1718,17 +1890,18 @@
     }
 
     function renderFinalGeneralParticipantDetail(nombre) {
-      detailTitleEl.textContent = `Vista individual · Cuartos + Semifinal + Final`;
+      detailTitleEl.textContent = `Vista individual · Quiniela final`;
       detailHintEl.hidden = false;
-      detailHintEl.textContent = "Aquí se muestra la quiniela completa de las últimas rondas.";
+      detailHintEl.textContent = "Incluye Cuartos, Semifinal, Final, posiciones finales y Bota de Oro.";
 
       const predMap = buildPredictionMap();
       const matches = getFinalPoolMatches();
-      const stats = calculateParticipantStats(nombre, matches);
-      const ranking = calculateRanking(matches);
+      const stats = calculateFinalGeneralParticipantStats(nombre);
+      const ranking = calculateFinalGeneralRanking();
       const position = getPositionByPoints(stats, ranking);
       const prizeAmount = getParticipantFinalPoolPrize(nombre);
-      const maxPoints = matches.reduce((sum, partido) => sum + getMaxPointsForRound(partido.ronda), 0);
+      const maxPoints = matches.reduce((sum, partido) => sum + getMaxPointsForRound(partido.ronda), 0)
+        + FINAL_PREDICTION_FIELDS.length;
 
       participantDetailEl.className = "";
       participantDetailEl.innerHTML = `
@@ -1739,18 +1912,65 @@
               ${prizeAmount > 0 ? `<span class="money-tag big">Ganado: ${formatMoney(prizeAmount)}</span>` : ""}
             </h3>
             <div>
-              <span class="pill blue">General finales</span>
+              <span class="pill blue">General final</span>
               <span class="pill yellow">Puesto ${position}</span>
               <span class="pill green">${stats.aciertos} aciertos</span>
               <span class="pill red">${stats.errores} errores</span>
               <span class="pill gray">${stats.pendientes} pendientes</span>
               <span class="pill yellow">${stats.marcadoresExactos} marcadores exactos</span>
+              <span class="pill blue">${stats.posicionesAciertos}/3 posiciones</span>
+              <span class="pill ${stats.botaPendiente ? "gray" : stats.botaAcierto ? "green" : "red"}">${stats.botaPendiente ? "Bota pendiente" : stats.botaAcierto ? "Bota acertada" : "Bota fallada"}</span>
             </div>
           </div>
           <div class="big-score">${stats.puntos} / ${maxPoints} pts</div>
         </div>
         ${FINAL_POOL_ROUNDS.map(round => renderParticipantRound(nombre, round, predMap)).join("")}
+        ${renderFinalPredictionsDetail(nombre)}
       `;
+    }
+
+    function renderFinalPredictionsDetail(nombre) {
+      const stats = calculateFinalPredictionStats(nombre);
+
+      return `
+        <div class="detail-round" id="participant-final-predictions">
+          <div class="detail-round-head">
+            <div>
+              <strong>Posiciones finales y Bota de Oro</strong>
+              <span class="pill blue">1 punto por cada acierto</span>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pronóstico</th>
+                  <th>Elección</th>
+                  <th>Resultado real</th>
+                  <th>Puntos</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${stats.details.map(item => `
+                  <tr class="${item.result.status}">
+                    <td><strong>${escapeHTML(item.label)}</strong></td>
+                    <td>${renderFinalPredictionValue(item.prediction, item.type)}</td>
+                    <td>${item.real ? renderFinalPredictionValue(item.real, item.type) : "Pendiente"}</td>
+                    <td><strong>${item.result.displayPoints}</strong></td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFinalPredictionValue(value, type) {
+      const clean = cleanValue(value);
+      if (!clean) return `<span class="pill gray">Sin predicción</span>`;
+      return type === "team" ? teamWithFlag(clean) : `<strong>${escapeHTML(clean)}</strong>`;
     }
 
     function renderParticipantRound(nombre, round, predMap) {
@@ -2153,7 +2373,9 @@
       console.error(error);
       statusEl.textContent = "No se pudieron cargar los datos.";
       errorBox.hidden = false;
-      errorBox.textContent = `${error.message}\n\nERROR`;
+      errorBox.textContent =
+        `${error.message}\n\n` +
+        `Revisa que las hojas se llamen exactamente "${SHEET_PARTIDOS}", "${SHEET_PREDICCIONES}" y "${SHEET_PRONOSTICOS_FINALES}".`;
     }
 
     function clearError() {
