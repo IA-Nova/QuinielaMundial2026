@@ -1780,7 +1780,7 @@
       rankingHintEl.hidden = false;
 
       if (!hasAllFinalPoolRounds()) {
-        rankingHintEl.textContent = "El premio se mostrará cuando estén capturadas y finalizadas Cuartos, Semifinal y Final, junto con las posiciones finales y la Bota de Oro.";
+        rankingHintEl.textContent = "";
       } else if (!areFinalPredictionResultsComplete()) {
         rankingHintEl.textContent = "El ranking ya incluye los pronósticos adicionales. El premio se mostrará cuando la fila RESULTADO REAL tenga Campeón, Subcampeón, Tercer Lugar y Bota de Oro.";
       } else if (!finished) {
