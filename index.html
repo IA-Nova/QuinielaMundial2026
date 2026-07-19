@@ -599,6 +599,7 @@
     tr:last-child td { border-bottom: 0; }
     tr.ok td { background: var(--green-soft); }
     tr.fail td { background: var(--red-soft); }
+    tr.partial td { background: var(--yellow-soft); }
     tr.pending td { background: #f8fafc; color: #475569; }
 
     .clickable-row { cursor: pointer; }
@@ -864,7 +865,7 @@
   <header>
     <div class="header-inner">
       <h1>Ranking Quiniela Mundial 2026</h1>
-      <p class="subtitle">Eliminatorias · aciertos por equipo que avanza y marcador exacto en Octavos y rondas finales.</p>
+      <p class="subtitle">Eliminatorias · marcador exacto en Octavos, Cuartos y Semifinal; en Final se suma 1 punto por el marcador correcto de cada equipo.</p>
     </div>
   </header>
 
@@ -947,6 +948,7 @@
     const ROUND_ORDER = ["16avos", "Octavos", "Cuartos", "Semifinal", "Final"];
     const FINAL_POOL_ROUNDS = ["Cuartos", "Semifinal", "Final"];
     const SCORE_BONUS_ROUNDS = ["Octavos", "Cuartos", "Semifinal", "Final"];
+    const INDIVIDUAL_SCORE_ROUNDS = ["Final"];
 
     const FINAL_PREDICTION_FIELDS = [
       { key: "campeon", label: "Campeón", type: "team" },
@@ -1082,7 +1084,7 @@
 
         validateData();
         renderRouteFromHash();
-        statusEl.textContent = `Datos actualizados: ${new Date().toLocaleString("es-MX")}`;
+        statusEl.textContent = ``;
       } catch (error) {
         showError(error);
       } finally {
@@ -1420,6 +1422,14 @@
       return SCORE_BONUS_ROUNDS.some(item => normalizeComparable(item) === normalizeComparable(round));
     }
 
+    function usesIndividualScoreBonus(round) {
+      return INDIVIDUAL_SCORE_ROUNDS.some(item => normalizeComparable(item) === normalizeComparable(round));
+    }
+
+    function usesExactScoreBonus(round) {
+      return usesScoreBonus(round) && !usesIndividualScoreBonus(round);
+    }
+
     function hasRealScore(partido) {
       return normalizeGoalValue(partido.golesLocal) !== "" && normalizeGoalValue(partido.golesVisitante) !== "";
     }
@@ -1429,17 +1439,19 @@
     }
 
     function isExactScore(partido, prediction) {
-      if (!usesScoreBonus(partido.ronda) || !hasRealScore(partido) || !hasPredictionScore(prediction)) return false;
+      if (!usesExactScoreBonus(partido.ronda) || !hasRealScore(partido) || !hasPredictionScore(prediction)) return false;
       return normalizeGoalValue(partido.golesLocal) === normalizeGoalValue(prediction.golesLocal)
         && normalizeGoalValue(partido.golesVisitante) === normalizeGoalValue(prediction.golesVisitante);
     }
 
     function getMaxPointsForRound(round) {
-      return usesScoreBonus(round) ? 2 : 1;
+      if (usesIndividualScoreBonus(round)) return 3;
+      return usesExactScoreBonus(round) ? 2 : 1;
     }
 
     function calculateMatchPoints(partido, prediction) {
       const prediccion = prediction?.prediccion || "";
+      const maxPoints = getMaxPointsForRound(partido.ronda);
 
       if (!partido.ganador) {
         return {
@@ -1448,20 +1460,45 @@
           status: "pending",
           winnerHit: false,
           scoreHit: false,
+          localScoreHit: false,
+          visitorScoreHit: false,
+          scorePoints: 0,
+          maxPoints,
           pending: true
         };
       }
 
-      const winnerHit = Boolean(prediccion) && normalizeComparable(prediccion) === normalizeComparable(partido.ganador);
-      const scoreHit = isExactScore(partido, prediction);
-      const puntos = (winnerHit ? 1 : 0) + (scoreHit ? 1 : 0);
+      const winnerHit = Boolean(prediccion)
+        && normalizeComparable(prediccion) === normalizeComparable(partido.ganador);
+
+      let scoreHit = false;
+      let localScoreHit = false;
+      let visitorScoreHit = false;
+      let scorePoints = 0;
+
+      if (usesIndividualScoreBonus(partido.ronda) && hasRealScore(partido) && hasPredictionScore(prediction)) {
+        localScoreHit = normalizeGoalValue(partido.golesLocal) === normalizeGoalValue(prediction.golesLocal);
+        visitorScoreHit = normalizeGoalValue(partido.golesVisitante) === normalizeGoalValue(prediction.golesVisitante);
+        scorePoints = (localScoreHit ? 1 : 0) + (visitorScoreHit ? 1 : 0);
+        scoreHit = localScoreHit && visitorScoreHit;
+      } else {
+        scoreHit = isExactScore(partido, prediction);
+        scorePoints = scoreHit ? 1 : 0;
+      }
+
+      const puntos = (winnerHit ? 1 : 0) + scorePoints;
+      const status = puntos === 0 ? "fail" : puntos === maxPoints ? "ok" : "partial";
 
       return {
         puntos,
         displayPoints: String(puntos),
-        status: winnerHit ? "ok" : "fail",
+        status,
         winnerHit,
         scoreHit,
+        localScoreHit,
+        visitorScoreHit,
+        scorePoints,
+        maxPoints,
         pending: false
       };
     }
@@ -1475,6 +1512,9 @@
         let errores = 0;
         let pendientes = 0;
         let marcadoresExactos = 0;
+        let puntosMarcador = 0;
+        let marcadoresLocales = 0;
+        let marcadoresVisitantes = 0;
 
         partidosScope.forEach(partido => {
           const prediction = predMap.get(`${nombre}::${partido.id}`);
@@ -1486,12 +1526,27 @@
           }
 
           puntos += result.puntos;
+          puntosMarcador += result.scorePoints;
           if (result.winnerHit) aciertos++;
           else errores++;
-          if (result.scoreHit) marcadoresExactos++;
+
+          if (usesExactScoreBonus(partido.ronda) && result.scoreHit) marcadoresExactos++;
+          if (usesIndividualScoreBonus(partido.ronda) && result.localScoreHit) marcadoresLocales++;
+          if (usesIndividualScoreBonus(partido.ronda) && result.visitorScoreHit) marcadoresVisitantes++;
         });
 
-        return { nombre, puntos, aciertos, errores, pendientes, marcadoresExactos, total: partidosScope.length };
+        return {
+          nombre,
+          puntos,
+          aciertos,
+          errores,
+          pendientes,
+          marcadoresExactos,
+          puntosMarcador,
+          marcadoresLocales,
+          marcadoresVisitantes,
+          total: partidosScope.length
+        };
       }).sort(sortRankingRows);
     }
 
@@ -1530,6 +1585,9 @@
         errores: 0,
         pendientes: getFinalPoolMatches().length + FINAL_PREDICTION_FIELDS.length,
         marcadoresExactos: 0,
+        puntosMarcador: 0,
+        marcadoresLocales: 0,
+        marcadoresVisitantes: 0,
         posicionesAciertos: 0,
         posicionesPendientes: 3,
         botaAcierto: false,
@@ -1541,6 +1599,7 @@
     function sortRankingRows(a, b) {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos;
       if (b.aciertos !== a.aciertos) return b.aciertos - a.aciertos;
+      if ((b.puntosMarcador || 0) !== (a.puntosMarcador || 0)) return (b.puntosMarcador || 0) - (a.puntosMarcador || 0);
       if (b.marcadoresExactos !== a.marcadoresExactos) return b.marcadoresExactos - a.marcadoresExactos;
       if (a.errores !== b.errores) return a.errores - b.errores;
       return a.nombre.localeCompare(b.nombre, "es");
@@ -1548,7 +1607,18 @@
 
     function calculateParticipantStats(nombre, partidosScope = partidos) {
       const ranking = calculateRanking(partidosScope, [nombre]);
-      return ranking[0] || { nombre, puntos: 0, aciertos: 0, errores: 0, pendientes: partidosScope.length, marcadoresExactos: 0, total: partidosScope.length };
+      return ranking[0] || {
+        nombre,
+        puntos: 0,
+        aciertos: 0,
+        errores: 0,
+        pendientes: partidosScope.length,
+        marcadoresExactos: 0,
+        puntosMarcador: 0,
+        marcadoresLocales: 0,
+        marcadoresVisitantes: 0,
+        total: partidosScope.length
+      };
     }
 
     function getPositionByPoints(item, ranking) {
@@ -1782,7 +1852,7 @@
       if (!hasAllFinalPoolRounds()) {
         rankingHintEl.textContent = "";
       } else if (!areFinalPredictionResultsComplete()) {
-        rankingHintEl.textContent = "El ranking ya incluye los pronósticos adicionales. El premio se mostrará cuando la fila RESULTADO REAL tenga Campeón, Subcampeón, Tercer Lugar y Bota de Oro.";
+        rankingHintEl.textContent = "";
       } else if (!finished) {
         rankingHintEl.textContent = "El premio se mostrará cuando terminen todos los partidos de Cuartos, Semifinal y Final.";
       } else {
@@ -1827,7 +1897,13 @@
             <span class="pill green">${item.aciertos} aciertos</span>
             <span class="pill red">${item.errores} errores</span>
             <span class="pill gray">${item.pendientes} pendientes</span>
-            ${scoreBonus ? `<span class="pill yellow">${item.marcadoresExactos} marcadores exactos</span>` : ""}
+            ${scoreBonus ? (
+              isGeneral
+                ? `<span class="pill yellow">${item.puntosMarcador || 0} pts por marcador</span>`
+                : usesIndividualScoreBonus(round)
+                  ? `<span class="pill yellow">${item.puntosMarcador || 0} aciertos de marcador</span>`
+                  : `<span class="pill yellow">${item.marcadoresExactos} marcadores exactos</span>`
+            ) : ""}
             ${isGeneral ? `<span class="pill blue">${item.posicionesAciertos}/3 posiciones</span>` : ""}
             ${isGeneral ? `<span class="pill ${item.botaPendiente ? "gray" : item.botaAcierto ? "green" : "red"}">${item.botaPendiente ? "Bota pendiente" : item.botaAcierto ? "Bota acertada" : "Bota fallada"}</span>` : ""}
           </div>
@@ -1848,8 +1924,8 @@
     function renderParticipantDetail(nombre, round = activeRound) {
       detailTitleEl.textContent = `Vista individual · ${round}`;
       detailHintEl.hidden = !usesScoreBonus(round);
-      detailHintEl.textContent = usesScoreBonus(round)
-        ? ""
+      detailHintEl.textContent = usesIndividualScoreBonus(round)
+        ? "En Final se suma 1 punto por acertar el marcador del equipo local y 1 punto por acertar el marcador del visitante."
         : "";
 
       if (!nombre) {
@@ -1880,7 +1956,11 @@
               <span class="pill green">${stats.aciertos} aciertos</span>
               <span class="pill red">${stats.errores} errores</span>
               <span class="pill gray">${stats.pendientes} pendientes</span>
-              ${usesScoreBonus(round) ? `<span class="pill yellow">${stats.marcadoresExactos} marcadores exactos</span>` : ""}
+              ${usesScoreBonus(round) ? (
+                usesIndividualScoreBonus(round)
+                  ? `<span class="pill yellow">${stats.puntosMarcador || 0} aciertos de marcador</span>`
+                  : `<span class="pill yellow">${stats.marcadoresExactos} marcadores exactos</span>`
+              ) : ""}
             </div>
           </div>
           <div class="big-score">${stats.puntos} / ${maxPointsByRound} pts</div>
@@ -1917,7 +1997,7 @@
               <span class="pill green">${stats.aciertos} aciertos</span>
               <span class="pill red">${stats.errores} errores</span>
               <span class="pill gray">${stats.pendientes} pendientes</span>
-              <span class="pill yellow">${stats.marcadoresExactos} marcadores exactos</span>
+              <span class="pill yellow">${stats.puntosMarcador || 0} pts por marcador</span>
               <span class="pill blue">${stats.posicionesAciertos}/3 posiciones</span>
               <span class="pill ${stats.botaPendiente ? "gray" : stats.botaAcierto ? "green" : "red"}">${stats.botaPendiente ? "Bota pendiente" : stats.botaAcierto ? "Bota acertada" : "Bota fallada"}</span>
             </div>
@@ -1990,7 +2070,11 @@
           <div class="detail-round-head">
             <div>
               <strong>${escapeHTML(round)}</strong>
-              ${usesScoreBonus(round) ? `<span class="pill yellow">+1 marcador exacto</span>` : ""}
+              ${usesScoreBonus(round) ? (
+                usesIndividualScoreBonus(round)
+                  ? `<span class="pill yellow">+1 por marcador de cada equipo</span>`
+                  : `<span class="pill yellow">+1 marcador exacto</span>`
+              ) : ""}
             </div>
           </div>
           <div class="table-wrap">
@@ -2011,7 +2095,7 @@
                     <tr class="${result.status} clickable-row" onclick="selectMatch('${escapeForAttribute(partido.id)}')" title="Ver predicciones de este partido">
                       <td>
                         ${renderPredictionMatch(partido, prediccion, prediction)}
-                        ${renderExactScoreTag(result)}
+                        ${renderScoreBonusTags(partido, result)}
                         <div class="match-meta">${formatDate(partido.fecha)} · ${escapeHTML(partido.hora)}</div>
                       </td>
                       <td>${renderRealResult(partido)}</td>
@@ -2090,13 +2174,30 @@
     }
 
     function renderPointsBreakdown(partido, result) {
-      const parts = [result.winnerHit ? "+1 avance" : "+0 avance"];
-      if (usesScoreBonus(partido.ronda)) parts.push(result.scoreHit ? "+1 marcador" : "+0 marcador");
+      const winnerLabel = normalizeComparable(partido.ronda) === normalizeComparable("Final") ? "ganador" : "avance";
+      const parts = [result.winnerHit ? `+1 ${winnerLabel}` : `+0 ${winnerLabel}`];
+
+      if (usesIndividualScoreBonus(partido.ronda)) {
+        parts.push(result.localScoreHit ? `+1 marcador ${partido.local}` : `+0 marcador ${partido.local}`);
+        parts.push(result.visitorScoreHit ? `+1 marcador ${partido.visitante}` : `+0 marcador ${partido.visitante}`);
+      } else if (usesExactScoreBonus(partido.ronda)) {
+        parts.push(result.scoreHit ? "+1 marcador exacto" : "+0 marcador exacto");
+      }
+
       return parts.join(" · ");
     }
 
-    function renderExactScoreTag(result) {
-      if (!result?.scoreHit) return "";
+    function renderScoreBonusTags(partido, result) {
+      if (!result || result.pending) return "";
+
+      if (usesIndividualScoreBonus(partido.ronda)) {
+        const tags = [];
+        if (result.localScoreHit) tags.push(`<span class="pill blue exact-score-tag">Marcador ${escapeHTML(partido.local)} +1</span>`);
+        if (result.visitorScoreHit) tags.push(`<span class="pill blue exact-score-tag">Marcador ${escapeHTML(partido.visitante)} +1</span>`);
+        return tags.length ? `<div class="score-bonus-tag-wrap">${tags.join("")}</div>` : "";
+      }
+
+      if (!result.scoreHit) return "";
       return `<div class="score-bonus-tag-wrap"><span class="pill blue exact-score-tag">Marcador exacto +1 extra</span></div>`;
     }
 
@@ -2140,10 +2241,25 @@
         else {
           if (row.result.winnerHit) acc.aciertos++;
           else acc.errores++;
-          if (row.result.scoreHit) acc.marcadoresExactos++;
+          acc.puntosMarcador += row.result.scorePoints;
+          if (usesExactScoreBonus(partido.ronda) && row.result.scoreHit) acc.marcadoresExactos++;
+          if (usesIndividualScoreBonus(partido.ronda) && row.result.localScoreHit) acc.marcadoresLocales++;
+          if (usesIndividualScoreBonus(partido.ronda) && row.result.visitorScoreHit) acc.marcadoresVisitantes++;
         }
         return acc;
-      }, { total: 0, local: 0, visitante: 0, sinPrediccion: 0, aciertos: 0, errores: 0, pendientes: 0, marcadoresExactos: 0 });
+      }, {
+        total: 0,
+        local: 0,
+        visitante: 0,
+        sinPrediccion: 0,
+        aciertos: 0,
+        errores: 0,
+        pendientes: 0,
+        marcadoresExactos: 0,
+        puntosMarcador: 0,
+        marcadoresLocales: 0,
+        marcadoresVisitantes: 0
+      });
 
       showMatchView();
       matchDetailEl.innerHTML = `
@@ -2160,7 +2276,11 @@
             <span class="pill green">${totals.aciertos} aciertos</span>
             <span class="pill red">${totals.errores} errores</span>
             <span class="pill gray">${totals.pendientes} pendientes</span>
-            ${scoreRound ? `<span class="pill yellow">${totals.marcadoresExactos} marcadores exactos</span>` : ""}
+            ${scoreRound ? (
+              usesIndividualScoreBonus(partido.ronda)
+                ? `<span class="pill yellow">${totals.marcadoresLocales} aciertos ${escapeHTML(partido.local)} · ${totals.marcadoresVisitantes} aciertos ${escapeHTML(partido.visitante)}</span>`
+                : `<span class="pill yellow">${totals.marcadoresExactos} marcadores exactos</span>`
+            ) : ""}
           </div>
           <div class="match-summary-pills">
             <span class="pill blue">${teamWithFlag(partido.local)}: ${totals.local}</span>
@@ -2184,7 +2304,7 @@
                   <td><strong>${escapeHTML(row.nombre)}</strong></td>
                   <td>
                     ${renderPredictionMatch(partido, row.prediccion, row.prediction)}
-                    ${renderExactScoreTag(row.result)}
+                    ${renderScoreBonusTags(partido, row.result)}
                   </td>
                   <td>${renderStatusPill(row.result)}</td>
                   <td>
@@ -2207,11 +2327,9 @@
 
     function renderStatusPill(result) {
       if (result.pending) return `<span class="pill gray">Pendiente</span>`;
-      if (result.winnerHit) {
-        const label = result.scoreHit ? "Acertó + marcador" : "Acertó";
-        return `<span class="pill green">${label}</span>`;
-      }
-      return `<span class="pill red">Falló</span>`;
+      if (result.puntos === result.maxPoints) return `<span class="pill green">Puntuación completa</span>`;
+      if (result.puntos > 0) return `<span class="pill yellow">Sumó ${result.puntos} pts</span>`;
+      return `<span class="pill red">Sin puntos</span>`;
     }
 
     function goBackToMain() {
